@@ -146,3 +146,35 @@ All **20/20 test cases** pass:
 npm run build
 ```
 Builds the `shared` type library, compiles client assets with `vite build`, and compiles the server with `tsc`.
+
+---
+
+## 🚀 Deployment Guide
+
+Celebration Planner is architected as an npm workspace monorepo (`client`, `server`, and `shared`).
+
+### 1. Deploying Frontend to Vercel
+
+1. Import the repository `santhoshdesu23/celebration-planner` into [Vercel](https://vercel.com).
+2. The project includes [vercel.json](file:///c:/Users/santh/celebration-planner/vercel.json) with preconfigured settings:
+   - **Build Command**: `npm run build -w shared && npm run build -w client`
+   - **Output Directory**: `client/dist`
+   - **SPA Rewrites**: Automatically routes paths to `/index.html` to avoid 404s on page refresh.
+3. In **Environment Variables**, add:
+   - `VITE_API_BASE_URL`: The URL of your deployed backend (e.g. `https://celebration-planner-api.onrender.com`).
+4. Click **Deploy**.
+
+### 2. Deploying Backend to Render / Railway / Fly.io
+
+Because the backend is a persistent Express server handling MongoDB connection pools, background AI sweeps, and JWT cookie sessions, deploy it to a Node container environment like Render or Railway:
+
+- **Build Command**: `npm install && npm run build -w shared && npm run build -w server`
+- **Start Command**: `npm run start -w server` (or `node server/dist/index.js`)
+- **Environment Variables**:
+  - `NODE_ENV`: `production`
+  - `PORT`: `3001` (or provided by host)
+  - `CORS_ORIGIN`: Your Vercel frontend URL (e.g. `https://celebration-planner.vercel.app`)
+  - `JWT_SECRET`: A secure random string (minimum 32 characters)
+  - `MONGODB_URI`: Your MongoDB Atlas connection string
+  - `GEMINI_API_KEY`: Your Google Gemini API key
+
