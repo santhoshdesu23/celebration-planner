@@ -174,7 +174,7 @@ export function updateGuestBudgetItem(
     ...current,
     budget: {
       ...current.budget,
-      items: current.budget.items.map((b) => (b.id === itemId ? { ...b, ...updates } : b)),
+      items: current.budget.items.map((b: BudgetItem) => (b.id === itemId ? { ...b, ...updates } : b)),
     },
     updatedAt: new Date().toISOString(),
   };
@@ -189,7 +189,7 @@ export function deleteGuestBudgetItem(itemId: string): EventType {
     ...current,
     budget: {
       ...current.budget,
-      items: current.budget.items.filter((b) => b.id !== itemId),
+      items: current.budget.items.filter((b: BudgetItem) => b.id !== itemId),
     },
     updatedAt: new Date().toISOString(),
   };
@@ -221,7 +221,7 @@ export function updateGuestTimelineItem(
   if (!current) throw new Error('No guest celebration draft active');
   const updated: EventType = {
     ...current,
-    timeline: current.timeline.map((t) => (t.id === itemId ? { ...t, ...updates } : t)),
+    timeline: current.timeline.map((t: TimelineItem) => (t.id === itemId ? { ...t, ...updates } : t)),
     updatedAt: new Date().toISOString(),
   };
   setGuestDraft(updated);
@@ -233,7 +233,7 @@ export function deleteGuestTimelineItem(itemId: string): EventType {
   if (!current) throw new Error('No guest celebration draft active');
   const updated: EventType = {
     ...current,
-    timeline: current.timeline.filter((t) => t.id !== itemId),
+    timeline: current.timeline.filter((t: TimelineItem) => t.id !== itemId),
     updatedAt: new Date().toISOString(),
   };
   setGuestDraft(updated);
@@ -264,7 +264,7 @@ export function updateGuestVendor(
   if (!current) throw new Error('No guest celebration draft active');
   const updated: EventType = {
     ...current,
-    vendors: current.vendors.map((v) => (v.id === vendorId ? { ...v, ...updates } : v)),
+    vendors: current.vendors.map((v: Vendor) => (v.id === vendorId ? { ...v, ...updates } : v)),
     updatedAt: new Date().toISOString(),
   };
   setGuestDraft(updated);
@@ -276,7 +276,7 @@ export function deleteGuestVendor(vendorId: string): EventType {
   if (!current) throw new Error('No guest celebration draft active');
   const updated: EventType = {
     ...current,
-    vendors: current.vendors.filter((v) => v.id !== vendorId),
+    vendors: current.vendors.filter((v: Vendor) => v.id !== vendorId),
     updatedAt: new Date().toISOString(),
   };
   setGuestDraft(updated);
@@ -304,7 +304,7 @@ export function deleteGuestIdea(ideaId: string): EventType {
   if (!current) throw new Error('No guest celebration draft active');
   const updated: EventType = {
     ...current,
-    ideas: current.ideas.filter((i) => i.id !== ideaId),
+    ideas: current.ideas.filter((i: AiIdea) => i.id !== ideaId),
     updatedAt: new Date().toISOString(),
   };
   setGuestDraft(updated);

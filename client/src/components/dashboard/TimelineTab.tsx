@@ -5,7 +5,7 @@ import { Button } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { AddMilestoneModal } from './AddMilestoneModal';
-import type { Event as EventType } from '@celebration-planner/shared';
+import type { Event as EventType, TimelineItem } from '@celebration-planner/shared';
 
 export interface TimelineTabProps {
   event: EventType;
@@ -16,7 +16,7 @@ export function TimelineTab({ event, onEventUpdated }: TimelineTabProps) {
   const [showAddMilestone, setShowAddMilestone] = useState(false);
 
   const completedMilestones = useMemo(
-    () => (event.timeline || []).filter((m) => m.isCompleted).length,
+    () => (event.timeline || []).filter((m: TimelineItem) => m.isCompleted).length,
     [event.timeline]
   );
 
@@ -94,7 +94,7 @@ export function TimelineTab({ event, onEventUpdated }: TimelineTabProps) {
 
       {/* Timeline Task Items */}
       <div className="space-y-3">
-        {event.timeline.map((item) => {
+        {event.timeline.map((item: TimelineItem) => {
           const isPastDue =
             !item.isCompleted && new Date(item.dueDate).getTime() < Date.now();
 

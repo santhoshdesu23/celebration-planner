@@ -341,7 +341,7 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const index = existing.budget.items.findIndex((i) => i.id === itemId);
+    const index = existing.budget.items.findIndex((i: BudgetItem) => i.id === itemId);
     if (index === -1) {
       return { status: 'ITEM_NOT_FOUND' };
     }
@@ -391,7 +391,7 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const itemExists = existing.budget.items.some((i) => i.id === itemId);
+    const itemExists = existing.budget.items.some((i: BudgetItem) => i.id === itemId);
     if (!itemExists) {
       return { status: 'ITEM_NOT_FOUND' };
     }
@@ -400,7 +400,7 @@ export const eventStore = {
       ...existing,
       budget: {
         ...existing.budget,
-        items: existing.budget.items.filter((i) => i.id !== itemId),
+        items: existing.budget.items.filter((i: BudgetItem) => i.id !== itemId),
       },
       updatedAt,
     };
@@ -484,7 +484,7 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const index = existing.timeline.findIndex((t) => t.id === itemId);
+    const index = existing.timeline.findIndex((t: TimelineItem) => t.id === itemId);
     if (index === -1) {
       return { status: 'ITEM_NOT_FOUND' };
     }
@@ -531,14 +531,14 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const itemExists = existing.timeline.some((t) => t.id === itemId);
+    const itemExists = existing.timeline.some((t: TimelineItem) => t.id === itemId);
     if (!itemExists) {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
     const updated: EventType = {
       ...existing,
-      timeline: existing.timeline.filter((t) => t.id !== itemId),
+      timeline: existing.timeline.filter((t: TimelineItem) => t.id !== itemId),
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
@@ -621,7 +621,7 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const index = existing.vendors.findIndex((v) => v.id === vendorId);
+    const index = existing.vendors.findIndex((v: Vendor) => v.id === vendorId);
     if (index === -1) {
       return { status: 'ITEM_NOT_FOUND' };
     }
@@ -668,14 +668,14 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const vendorExists = existing.vendors.some((v) => v.id === vendorId);
+    const vendorExists = existing.vendors.some((v: Vendor) => v.id === vendorId);
     if (!vendorExists) {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
     const updated: EventType = {
       ...existing,
-      vendors: existing.vendors.filter((v) => v.id !== vendorId),
+      vendors: existing.vendors.filter((v: Vendor) => v.id !== vendorId),
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
@@ -749,14 +749,14 @@ export const eventStore = {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
-    const ideaExists = existing.ideas.some((i) => i.id === ideaId);
+    const ideaExists = existing.ideas.some((i: AiIdea) => i.id === ideaId);
     if (!ideaExists) {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
     const updated: EventType = {
       ...existing,
-      ideas: existing.ideas.filter((i) => i.id !== ideaId),
+      ideas: existing.ideas.filter((i: AiIdea) => i.id !== ideaId),
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
@@ -902,13 +902,13 @@ export const eventStore = {
     // Preserve any custom milestones or vendors added by user while AI generation was in-flight
     const existingTimeline = event.timeline || [];
     const userCustomTimeline = existingTimeline.filter(
-      (existingItem) => !plan.timeline.some((aiItem) => aiItem.id === existingItem.id)
+      (existingItem: TimelineItem) => !plan.timeline.some((aiItem: TimelineItem) => aiItem.id === existingItem.id)
     );
     event.timeline = [...plan.timeline, ...userCustomTimeline];
 
     const existingVendors = event.vendors || [];
     const userCustomVendors = existingVendors.filter(
-      (existingVendor) => !existingVendor.isAiSuggested
+      (existingVendor: Vendor) => !existingVendor.isAiSuggested
     );
     event.vendors = [...plan.vendors, ...userCustomVendors];
 

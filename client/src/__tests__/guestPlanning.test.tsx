@@ -22,7 +22,7 @@ import {
 } from '../lib/guestDraft';
 import { api } from '../lib/api';
 import * as authContextModule from '../lib/authContext';
-import type { Event as EventType } from '@celebration-planner/shared';
+import type { Event as EventType, TimelineItem, Vendor } from '@celebration-planner/shared';
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -180,14 +180,14 @@ describe('Guest Planning Flow & Persistence', () => {
         dueDate: '2028-08-01T12:00:00.000Z',
         isCompleted: false,
       });
-      const newMilestone = withTimeline.timeline.find((t) => t.title === 'Send Invitations');
+      const newMilestone = withTimeline.timeline.find((t: TimelineItem) => t.title === 'Send Invitations');
       expect(newMilestone).toBeDefined();
 
       const completedTimeline = updateGuestTimelineItem(newMilestone!.id, { isCompleted: true });
-      expect(completedTimeline.timeline.find((t) => t.id === newMilestone!.id)?.isCompleted).toBe(true);
+      expect(completedTimeline.timeline.find((t: TimelineItem) => t.id === newMilestone!.id)?.isCompleted).toBe(true);
 
       const deletedTimeline = deleteGuestTimelineItem(newMilestone!.id);
-      expect(deletedTimeline.timeline.some((t) => t.id === newMilestone!.id)).toBe(false);
+      expect(deletedTimeline.timeline.some((t: TimelineItem) => t.id === newMilestone!.id)).toBe(false);
 
       // Vendor add & update & delete
       const withVendor = addGuestVendor({
@@ -197,14 +197,14 @@ describe('Guest Planning Flow & Persistence', () => {
         estimatedCost: 2000,
         isAiSuggested: false,
       });
-      const newVendor = withVendor.vendors.find((v) => v.name === 'Floral Dreams');
+      const newVendor = withVendor.vendors.find((v: Vendor) => v.name === 'Floral Dreams');
       expect(newVendor).toBeDefined();
 
       const updatedVendor = updateGuestVendor(newVendor!.id, { status: 'booked', confirmedCost: 1900 });
-      expect(updatedVendor.vendors.find((v) => v.id === newVendor!.id)?.status).toBe('booked');
+      expect(updatedVendor.vendors.find((v: Vendor) => v.id === newVendor!.id)?.status).toBe('booked');
 
       const deletedVendor = deleteGuestVendor(newVendor!.id);
-      expect(deletedVendor.vendors.some((v) => v.id === newVendor!.id)).toBe(false);
+      expect(deletedVendor.vendors.some((v: Vendor) => v.id === newVendor!.id)).toBe(false);
     });
   });
 

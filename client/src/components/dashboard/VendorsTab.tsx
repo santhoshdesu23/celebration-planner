@@ -5,7 +5,7 @@ import { Button, Badge } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { AddVendorModal } from './AddVendorModal';
-import type { Event as EventType, VendorStatus } from '@celebration-planner/shared';
+import type { Event as EventType, VendorStatus, Vendor } from '@celebration-planner/shared';
 
 export interface VendorsTabProps {
   event: EventType;
@@ -72,7 +72,7 @@ export function VendorsTab({ event, onEventUpdated }: VendorsTabProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {event.vendors.map((vendor) => {
+        {event.vendors.map((vendor: Vendor) => {
           const statusColors: Record<VendorStatus, { bg: string; text: string }> = {
             not_contacted: { bg: 'bg-gray-100', text: 'text-gray-700' },
             contacted: { bg: 'bg-blue-100', text: 'text-blue-800' },

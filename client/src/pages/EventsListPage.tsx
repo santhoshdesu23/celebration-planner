@@ -13,7 +13,7 @@ import {
 import { Button, Badge, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
 import { formatCurrency, formatEventType, formatDate } from '@/lib/utils';
-import type { Event as EventType } from '@celebration-planner/shared';
+import type { Event as EventType, TimelineItem } from '@celebration-planner/shared';
 
 export function EventsListPage() {
   const navigate = useNavigate();
@@ -150,7 +150,7 @@ export function EventsListPage() {
                 (new Date(event.eventDate).getTime() - Date.now()) /
                   (1000 * 60 * 60 * 24)
               );
-              const completedTasks = event.timeline.filter((t) => t.isCompleted).length;
+              const completedTasks = event.timeline.filter((t: TimelineItem) => t.isCompleted).length;
 
               return (
                 <div

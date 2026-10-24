@@ -208,7 +208,7 @@ export function BudgetTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ivory-200">
-                {event.budget.items.map((item) => (
+                {event.budget.items.map((item: BudgetItem) => (
                   <tr key={item.id} className="hover:bg-ivory-50/50 transition-colors">
                     <td className="py-4 px-5">
                       <button

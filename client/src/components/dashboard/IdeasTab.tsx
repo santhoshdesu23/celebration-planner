@@ -38,7 +38,7 @@ export function IdeasTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {ideas.map((idea, index) => (
+        {ideas.map((idea: AiIdea, index: number) => (
           <div
             key={idea.id || index}
             className="bg-white rounded-3xl border border-ivory-200 p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between"
@@ -60,7 +60,7 @@ export function IdeasTab({
             </div>
             {idea.tags && idea.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-3 border-t border-ivory-200">
-                {idea.tags.map((tag, tIdx) => (
+                {idea.tags.map((tag: string, tIdx: number) => (
                   <span
                     key={tIdx}
                     className="text-xs bg-ivory-100 text-charcoal-light px-2.5 py-1 rounded-full font-medium"
