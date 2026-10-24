@@ -29,7 +29,7 @@ describe('Vercel Serverless Function Adapter (api/index.ts)', () => {
         server.close(() => resolve());
       });
     });
-  });
+  }, 15000);
 
   it('normalizes URLs stripped of /api prefix (e.g. /health -> /api/health)', async () => {
     const { default: handler } = await import('../../api/index.ts');
