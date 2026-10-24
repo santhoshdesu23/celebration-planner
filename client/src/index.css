@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Google Fonts import handled in index.html ─────────────────────────────── */
+
+@layer base {
+  :root {
+    --color-ivory: #faf7f2;
+    --color-plum: #4a1942;
+    --color-gold: #c9a84c;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-ivory text-charcoal font-sans;
+    min-height: 100vh;
+  }
+
+  *,
+  *::before,
+  *::after {
+    @apply box-border;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+  }
+
+  /* Focus-visible ring for keyboard accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold-400 ring-offset-2 ring-offset-ivory;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-ivory-200;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-plum-200 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-plum-300;
+  }
+}
+
+@layer components {
+  /* ── Glass card ─────────────────────────────────────────────────────────── */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/40 rounded-3xl shadow-glass;
+  }
+
+  /* ── Gradient text ──────────────────────────────────────────────────────── */
+  .text-gradient-plum {
+    @apply bg-gradient-to-r from-plum-500 to-plum-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-gold-400 to-gold-300 bg-clip-text text-transparent;
+  }
+
+  /* ── Section container ───────────────────────────────────────────────────── */
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* ── Decorative divider ─────────────────────────────────────────────────── */
+  .gold-divider {
+    @apply flex items-center gap-4;
+  }
+  .gold-divider::before,
+  .gold-divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent to-gold-300;
+  }
+  .gold-divider::before {
+    @apply bg-gradient-to-l;
+  }
+
+  /* ── Step indicator ─────────────────────────────────────────────────────── */
+  .step-indicator {
+    @apply flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all duration-300;
+  }
+  .step-indicator.active {
+    @apply bg-plum text-white shadow-md;
+  }
+  .step-indicator.completed {
+    @apply bg-gold text-white;
+  }
+  .step-indicator.pending {
+    @apply bg-ivory-200 text-muted border-2 border-ivory-300;
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-400 { animation-delay: 400ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+}
