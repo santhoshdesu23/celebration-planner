@@ -7,14 +7,35 @@ import { aiJobRunner } from './services/aiJobRunner.js';
 const app = createApp();
 
 let isInitialized = false;
+let initPromise: Promise<void> | null = null;
+
 export async function ensureInitialized(): Promise<void> {
   if (isInitialized) return;
-  await connectDatabase();
-  await migrateLegacyEvents().catch((err: unknown) => {
-    console.warn('Migration notice:', err);
-  });
-  isInitialized = true;
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        await connectDatabase();
+        await migrateLegacyEvents().catch((err: unknown) => {
+          console.warn('[Serverless] Migration notice:', err);
+        });
+        isInitialized = true;
+      } catch (err: unknown) {
+        console.error('[Serverless] DB connection error:', err);
+      }
+    })();
+  }
+  await initPromise;
 }
+
+// Ensure database and migrations are connected before handling any route in serverless functions
+app.use(async (_req, _res, next) => {
+  try {
+    await ensureInitialized();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 async function start() {
   await ensureInitialized();

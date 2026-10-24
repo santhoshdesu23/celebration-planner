@@ -4,12 +4,13 @@
     "client": {
       "root": "client",
       "framework": "vite",
-      "buildCommand": "npm run build -w shared && npm run build"
+      "buildCommand": "npm run build"
     },
     "server": {
       "root": "server",
       "framework": "express",
-      "buildCommand": "npm run build -w shared && npm run build"
+      "entrypoint": "dist/index.js",
+      "buildCommand": "npm run build"
     }
   },
   "rewrites": [

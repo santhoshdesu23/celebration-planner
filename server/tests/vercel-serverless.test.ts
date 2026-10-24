@@ -2,19 +2,17 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { EventEmitter } from 'node:events';
 
-describe('Vercel Serverless Function Adapter (api/index.ts)', () => {
-  it('exports a callable handler function', async () => {
-    const { default: handler } = await import('../../api/index.ts');
-    expect(typeof handler).toBe('function');
+describe('Vercel Express Function Entrypoint (server/src/index.ts)', () => {
+  it('exports a deployable Express app instance', async () => {
+    const { default: app } = await import('../src/index.js');
+    expect(typeof app).toBe('function');
   });
 
   it('serves GET /api/health with status 200 and healthy payload', async () => {
-    const { default: handler } = await import('../../api/index.ts');
+    const { default: app } = await import('../src/index.js');
     const http = await import('node:http');
 
-    const server = http.createServer((req, res) => {
-      handler(req, res);
-    });
+    const server = http.createServer(app);
 
     await new Promise<void>((resolve) => {
       server.listen(0, async () => {
@@ -32,12 +30,10 @@ describe('Vercel Serverless Function Adapter (api/index.ts)', () => {
   }, 15000);
 
   it('normalizes URLs stripped of /api prefix (e.g. /health -> /api/health)', async () => {
-    const { default: handler } = await import('../../api/index.ts');
+    const { default: app } = await import('../src/index.js');
     const http = await import('node:http');
 
-    const server = http.createServer((req, res) => {
-      handler(req, res);
-    });
+    const server = http.createServer(app);
 
     await new Promise<void>((resolve) => {
       server.listen(0, async () => {
@@ -54,12 +50,10 @@ describe('Vercel Serverless Function Adapter (api/index.ts)', () => {
   });
 
   it('generates a guest plan via POST /api/events/guest-plan through serverless handler', async () => {
-    const { default: handler } = await import('../../api/index.ts');
+    const { default: app } = await import('../src/index.js');
     const http = await import('node:http');
 
-    const server = http.createServer((req, res) => {
-      handler(req, res);
-    });
+    const server = http.createServer(app);
 
     await new Promise<void>((resolve) => {
       server.listen(0, async () => {
