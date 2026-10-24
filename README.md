@@ -149,32 +149,35 @@ Builds the `shared` type library, compiles client assets with `vite build`, and 
 
 ---
 
-## 🚀 Deployment Guide
+## 🚀 Deployment Guide — Unified Frontend & Backend on Vercel
 
-Celebration Planner is architected as an npm workspace monorepo (`client`, `server`, and `shared`).
+Celebration Planner is configured for a single, unified deployment on **Vercel** where both the frontend React SPA and Express API run under the **same project and domain**:
+- **Frontend**: `https://your-project.vercel.app/`
+- **Backend API**: `https://your-project.vercel.app/api/...`
 
-### 1. Deploying Frontend to Vercel
+### 1. Import Project to Vercel
+1. Go to [vercel.com](https://vercel.com) and click **"Add New..."** > **"Project"**.
+2. Select your repository: `santhoshdesu23/celebration-planner`.
+3. In **Project Settings**:
+   - **Root Directory**: `./` (leave as repository root)
+   - **Framework Preset**: Vite (or Other)
+   - **Build Command**: `npm run build` *(Pre-configured via `vercel.json`)*
+   - **Output Directory**: `client/dist` *(Pre-configured via `vercel.json`)*
 
-1. Import the repository `santhoshdesu23/celebration-planner` into [Vercel](https://vercel.com).
-2. The project includes [vercel.json](file:///c:/Users/santh/celebration-planner/vercel.json) with preconfigured settings:
-   - **Build Command**: `npm run build -w shared && npm run build -w client`
-   - **Output Directory**: `client/dist`
-   - **SPA Rewrites**: Automatically routes paths to `/index.html` to avoid 404s on page refresh.
-3. In **Environment Variables**, add:
-   - `VITE_API_BASE_URL`: The URL of your deployed backend (e.g. `https://celebration-planner-api.onrender.com`).
-4. Click **Deploy**.
+### 2. Configure Environment Variables in Vercel
+In **Vercel Project Settings > Environment Variables**, configure the server-side environment variables:
 
-### 2. Deploying Backend to Render / Railway / Fly.io
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `NODE_ENV` | Yes | Runtime environment | `production` |
+| `JWT_SECRET` | Yes | 32+ char secret for JWT authentication | `your-secure-random-jwt-secret-key-32chars` |
+| `MONGODB_URI` | Yes | MongoDB Atlas connection string | `mongodb+srv://user:pass@cluster.mongodb.net/celebration-planner` |
+| `GEMINI_API_KEY` | Optional | Google Gemini API key for AI generation | `AIzaSy...` (falls back to deterministic AI engine if omitted) |
+| `CORS_ORIGIN` | Optional | Canonical production origin | `https://your-project.vercel.app` *(Vercel domains auto-whitelisted)* |
 
-Because the backend is a persistent Express server handling MongoDB connection pools, background AI sweeps, and JWT cookie sessions, deploy it to a Node container environment like Render or Railway:
+> **Note on Client Variables**: You do **NOT** need to set `VITE_API_BASE_URL`. Because the frontend and backend run on the exact same domain, the frontend automatically makes same-origin relative calls to `/api/...`, ensuring seamless HttpOnly cookie delivery without third-party cookie restrictions.
 
-- **Build Command**: `npm install && npm run build -w shared && npm run build -w server`
-- **Start Command**: `npm run start -w server` (or `node server/dist/index.js`)
-- **Environment Variables**:
-  - `NODE_ENV`: `production`
-  - `PORT`: `3001` (or provided by host)
-  - `CORS_ORIGIN`: Your Vercel frontend URL (e.g. `https://celebration-planner.vercel.app`)
-  - `JWT_SECRET`: A secure random string (minimum 32 characters)
-  - `MONGODB_URI`: Your MongoDB Atlas connection string
-  - `GEMINI_API_KEY`: Your Google Gemini API key
+### 3. Serverless Lifecycle & Durability
+- **Serverless Entrypoint**: [api/index.ts](file:///c:/Users/santh/celebration-planner/api/index.ts) provides a serverless wrapper that lazily connects to MongoDB Atlas and reuses the connection across warm function invocations.
+- **On-Demand AI State Driving**: In serverless environments, background promises freeze once HTTP responses return. If an AI plan is pending or interrupted when a user navigates to the event, the `/api/events/:id/ai-status` polling endpoint actively claims and executes the generation to completion, guaranteeing no jobs are lost or stuck. Deterministic fallbacks guarantee instant completion if external LLM APIs fail.
 

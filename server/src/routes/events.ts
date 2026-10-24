@@ -390,12 +390,33 @@ router.get('/:id/ai-status', async (req: Request, res: Response, next: NextFunct
   try {
     const id = UUIDParamSchema.parse(req.params.id);
     const userId = req.user!.id;
-    const statusInfo = await eventStore.findAiStatus(id, userId);
+    let statusInfo = await eventStore.findAiStatus(id, userId);
     if (!statusInfo) {
       return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Event not found' },
       });
+    }
+
+    // In Serverless execution (e.g. Vercel), background promises freeze when HTTP responses complete.
+    // If the plan is 'pending' or interrupted 'processing' with no active in-process runner,
+    // actively drive generation to completion during polling so the user never gets stuck.
+    if (
+      statusInfo.aiPlanStatus === 'pending' ||
+      (statusInfo.aiPlanStatus === 'processing' && !aiJobRunner.isJobActive(id, userId))
+    ) {
+      const generated = await aiJobRunner.triggerJob(id, userId);
+      if (generated) {
+        statusInfo = {
+          eventId: id,
+          aiPlanStatus: generated.aiPlanStatus,
+          aiSuggestionsGenerated: generated.aiSuggestionsGenerated,
+          aiPlanStartedAt: generated.aiPlanStartedAt || null,
+          aiPlanCompletedAt: generated.aiPlanCompletedAt || null,
+          aiPlanError: generated.aiPlanError || null,
+          aiPlanRetryCount: generated.aiPlanRetryCount ?? 0,
+        };
+      }
     }
 
     res.json({
