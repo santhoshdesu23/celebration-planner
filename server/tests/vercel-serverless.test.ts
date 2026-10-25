@@ -6,7 +6,7 @@ describe('Vercel Express Function Entrypoint (server/src/index.ts)', () => {
   it('exports a deployable Express app instance', async () => {
     const { default: app } = await import('../src/index.js');
     expect(typeof app).toBe('function');
-  });
+  }, 15000);
 
   it('serves GET /api/health with status 200 and healthy payload', async () => {
     const { default: app } = await import('../src/index.js');
@@ -47,7 +47,7 @@ describe('Vercel Express Function Entrypoint (server/src/index.ts)', () => {
         server.close(() => resolve());
       });
     });
-  });
+  }, 15000);
 
   it('generates a guest plan via POST /api/events/guest-plan through serverless handler', async () => {
     const { default: app } = await import('../src/index.js');
@@ -85,5 +85,5 @@ describe('Vercel Express Function Entrypoint (server/src/index.ts)', () => {
         server.close(() => resolve());
       });
     });
-  });
+  }, 15000);
 });

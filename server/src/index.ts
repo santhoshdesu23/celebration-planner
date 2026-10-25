@@ -47,8 +47,8 @@ async function start() {
   });
 }
 
-// In local dev/node execution, start listening on PORT. On Vercel, export app as default.
-if (process.env.VERCEL === '1') {
+// In local dev/node execution, start listening on PORT. On Vercel and in test runs, export app as default.
+if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'test') {
   ensureInitialized().catch((err: unknown) => {
     console.error('Failed to initialize database on Vercel:', formatSafeError(err));
   });
