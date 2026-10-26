@@ -16,11 +16,9 @@
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch"
   },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.4.0"
-  },
   "dependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
     "zod": "^3.23.0"
   }
 }
