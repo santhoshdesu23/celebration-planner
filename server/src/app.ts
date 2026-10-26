@@ -14,6 +14,9 @@ import authRouter from './routes/auth.js';
 export function createApp() {
   const app = express();
 
+  // ── Trust reverse proxy (Vercel edge & lambdas) ─────────────────────────────
+  app.set('trust proxy', 1);
+
   // ── Security headers ────────────────────────────────────────────────────────
   app.use(
     helmet({
@@ -69,7 +72,14 @@ export function createApp() {
 
   // ── URL path normalization for reverse proxies and serverless rewrites ───────
   app.use((req, _res, next) => {
-    if (req.url && !req.url.startsWith('/api')) {
+    // If rewritten to entrypoint file (/api/index or /api/index.js), restore original URL
+    if (
+      req.originalUrl &&
+      req.originalUrl.startsWith('/api') &&
+      (!req.url || req.url.includes('/api/index'))
+    ) {
+      req.url = req.originalUrl;
+    } else if (req.url && !req.url.startsWith('/api')) {
       req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`;
     }
     next();
@@ -85,6 +95,13 @@ export function createApp() {
   app.use('/api', csrfProtection);
 
   // ── Routes ──────────────────────────────────────────────────────────────────
+  app.get(['/api', '/api/'], (_req, res) => {
+    res.json({
+      success: true,
+      message: 'Celebration Planner API is running',
+      version: '1.0.0',
+    });
+  });
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/events', eventsRouter);

@@ -21,6 +21,7 @@ export async function ensureInitialized(): Promise<void> {
         isInitialized = true;
       } catch (err: unknown) {
         console.error('[Serverless] DB connection error:', err);
+        initPromise = null;
       }
     })();
   }
@@ -48,7 +49,7 @@ async function start() {
 }
 
 // In local dev/node execution, start listening on PORT. On Vercel and in test runs, export app as default.
-if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'test') {
+if (Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'test') {
   ensureInitialized().catch((err: unknown) => {
     console.error('Failed to initialize database on Vercel:', formatSafeError(err));
   });

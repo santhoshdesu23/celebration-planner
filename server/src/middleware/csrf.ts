@@ -55,7 +55,7 @@ export function isAllowedOrigin(origin?: string | null): boolean {
     }
   }
 
-  // Support Vercel production and preview deployment URLs
+  // Support Vercel production, preview, and deployment URLs
   if (process.env.VERCEL || process.env.VERCEL_URL) {
     if (process.env.VERCEL_URL && normalized === `https://${process.env.VERCEL_URL.toLowerCase()}`) {
       return true;
@@ -64,6 +64,9 @@ export function isAllowedOrigin(origin?: string | null): boolean {
       process.env.VERCEL_PROJECT_PRODUCTION_URL &&
       normalized === `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.toLowerCase()}`
     ) {
+      return true;
+    }
+    if (/^https:\/\/[a-z0-9-_.]+\.vercel\.app$/.test(normalized)) {
       return true;
     }
   }
