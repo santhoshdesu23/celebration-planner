@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import crypto from 'node:crypto';
 import request from 'supertest';
-import { createApp } from '../src/app.js';
+import { createApp } from '../src/createApp.js';
 import { eventStore } from '../src/services/eventStore.js';
 import { getTestAuthHeader } from './helpers/authHelper.js';
 

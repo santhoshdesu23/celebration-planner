@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../src/app.js';
+import { createApp } from '../src/createApp.js';
 import { userStore } from '../src/services/userStore.js';
 import { eventStore } from '../src/services/eventStore.js';
 import { sanitizeForPrompt } from '../src/services/aiService.js';

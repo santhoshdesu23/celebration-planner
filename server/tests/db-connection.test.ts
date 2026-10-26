@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../src/app.js';
+import { createApp } from '../src/createApp.js';
 import {
   normalizeMongoUri,
   sanitizeMongoUri,

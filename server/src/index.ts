@@ -1,4 +1,4 @@
-import { createApp } from './app.js';
+import { createApp } from './createApp.js';
 import { env, formatSafeError } from './config/env.js';
 import { connectDatabase } from './db/connection.js';
 import { migrateLegacyEvents } from './db/migration.js';
