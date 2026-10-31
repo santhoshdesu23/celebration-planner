@@ -20,6 +20,10 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export function generateToken(payload: TokenPayload): string {
+  if (!env.JWT_SECRET) {
+    // Production misconfiguration: refuse to sign rather than use an insecure secret.
+    throw new Error('JWT signing is unavailable: JWT_SECRET is not securely configured.');
+  }
   return jwt.sign({ ...payload }, env.JWT_SECRET, {
     algorithm: 'HS256',
     expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
@@ -27,6 +31,7 @@ export function generateToken(payload: TokenPayload): string {
 }
 
 export function verifyToken(token: string): TokenPayload | null {
+  if (!env.JWT_SECRET) return null;
   try {
     // Explicitly pin algorithm to HS256 to prevent algorithm-confusion or "none" attacks
     const decoded = jwt.verify(token, env.JWT_SECRET, {

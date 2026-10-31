@@ -20,7 +20,7 @@ import { aiService } from '../services/aiService.js';
 import { aiJobRunner } from '../services/aiJobRunner.js';
 import { aiRateLimiter, guestAiRateLimiter } from '../middleware/rateLimiter.js';
 import { requireAuth } from '../middleware/auth.js';
-import { SaveGuestPlanSchema } from '@celebration-planner/shared';
+import { SaveGuestPlanSchema, EventTypeEnum } from '@celebration-planner/shared';
 
 const router = Router();
 
@@ -31,14 +31,14 @@ const GuestAiAssistSchema = z.object({
   event: z.object({
     id: z.string().optional(),
     title: z.string().min(1).max(200),
-    type: z.string().min(1),
+    type: EventTypeEnum,
     eventDate: z.string().datetime(),
     guestCount: z.number().int().positive(),
     location: z.string().min(1).max(500),
     budget: z.object({
       currency: z.string().default('USD'),
       totalBudget: z.number().nonnegative(),
-      items: z.array(z.any()).default([]),
+      items: z.array(BudgetItemSchema).default([]),
     }),
   }),
   prompt: z.string().min(1).max(2000),

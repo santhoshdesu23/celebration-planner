@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
@@ -84,9 +84,10 @@ export function CreateEventPage() {
         reset();
         navigate('/guest-plan');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create event:', err);
-      toast.error(err?.message || 'Something went wrong. Please try again.');
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,9 +97,9 @@ export function CreateEventPage() {
     <div className="min-h-screen bg-gradient-ivory py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Back link */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-sm text-muted hover:text-plum transition-colors mb-8 group"
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-muted hover:text-plum transition-colors mb-8 group"
           aria-label="Back to home"
         >
           <ArrowLeft
@@ -106,7 +107,7 @@ export function CreateEventPage() {
             className="group-hover:-translate-x-1 transition-transform"
           />
           Back to home
-        </button>
+        </Link>
 
         {/* Header */}
         <div className="mb-8 text-center">

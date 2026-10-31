@@ -37,3 +37,22 @@ export function formatEventType(type: string): string {
     .map((word) => capitalise(word))
     .join(' ');
 }
+/**
+ * Returns `candidate` only when it is a same-origin, in-app path (e.g. "/events/123").
+ * Rejects absolute URLs, protocol-relative ("//host"), backslash tricks ("/\host"), and control
+ * characters so a crafted `?redirect=` value can never send users to another site.
+ */
+export function getSafeRedirectPath(candidate: unknown, fallback = '/events'): string {
+  if (typeof candidate !== 'string') return fallback;
+  const value = candidate.trim();
+  if (
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.includes('\\') ||
+    // eslint-disable-next-line no-control-regex
+    /[\x00-\x1f\x7f]/.test(value)
+  ) {
+    return fallback;
+  }
+  return value;
+}

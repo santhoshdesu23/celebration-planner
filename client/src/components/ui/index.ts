@@ -6,3 +6,5 @@ export { Select } from './Select';
 export { Badge } from './Badge';
 export { Spinner, LoadingPage } from './Spinner';
 export { ErrorState, EmptyState } from './States';
+export { Modal, type ModalProps } from './Modal';
+

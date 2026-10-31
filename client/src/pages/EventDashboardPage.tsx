@@ -236,8 +236,9 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
           : null
       );
       toast.success('Retrying celebration plan generation...');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to retry plan generation');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to retry plan generation';
+      toast.error(message);
     } finally {
       setIsRetryingAi(false);
     }
@@ -322,8 +323,9 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       clearGuestDraft();
       toast.success('🎉 Celebration plan permanently saved to your account!');
       navigate(`/events/${saved.id}`);
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to save celebration plan');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to save celebration plan';
+      toast.error(message);
     } finally {
       setIsSavingGuestPlan(false);
     }
@@ -629,21 +631,49 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
         </div>
 
         {/* ─── Navigation Tabs ──────────────────────────────────────────────── */}
-        <div className="flex border-b border-ivory-200 overflow-x-auto gap-2 pb-px">
+        <nav
+          aria-label="Event dashboard sections"
+          className="flex border-b border-ivory-200 overflow-x-auto gap-2 pb-px"
+        >
           {[
             { id: 'ideas', label: 'AI Ideas & Themes', icon: Sparkles, count: event.ideas.length },
             { id: 'budget', label: 'Budget Planner', icon: DollarSign, count: event.budget.items.length },
             { id: 'timeline', label: 'Milestones & Tasks', icon: Clock, count: `${completedMilestones}/${event.timeline.length}` },
             { id: 'vendors', label: 'Vendor Directory', icon: Users, count: event.vendors.length },
             { id: 'assistant', label: 'Celebration AI Chat', icon: MessageSquare },
-          ].map((tab) => {
+          ].map((tab, idx, allTabs) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
+                type="button"
+                id={`tab-${tab.id}`}
+                aria-pressed={isActive}
+                aria-controls={`panel-${tab.id}`}
                 onClick={() => setActiveTab(tab.id as Tab)}
-                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-xl transition-all border-b-2 ${
+                onKeyDown={(e) => {
+                  let nextIdx = idx;
+                  if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    nextIdx = (idx + 1) % allTabs.length;
+                  } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    nextIdx = (idx - 1 + allTabs.length) % allTabs.length;
+                  } else if (e.key === 'Home') {
+                    e.preventDefault();
+                    nextIdx = 0;
+                  } else if (e.key === 'End') {
+                    e.preventDefault();
+                    nextIdx = allTabs.length - 1;
+                  } else {
+                    return;
+                  }
+                  const nextTab = allTabs[nextIdx].id as Tab;
+                  setActiveTab(nextTab);
+                  document.getElementById(`tab-${nextTab}`)?.focus();
+                }}
+                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap rounded-t-xl transition-all border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold ${
                   isActive
                     ? 'border-gold text-plum bg-white shadow-sm'
                     : 'border-transparent text-muted hover:text-charcoal hover:bg-white/50'
@@ -668,51 +698,58 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
               </button>
             );
           })}
-        </div>
+        </nav>
 
         {/* ─── Active Tab Content ───────────────────────────────────────────── */}
-        {activeTab === 'ideas' && (
-          <IdeasTab
-            ideas={event.ideas}
-            isRegenerating={isRegenerating}
-            onRegenerateIdeas={handleRegenerateIdeas}
-            onSelectPrompt={(prompt) => {
-              setActiveTab('assistant');
-              handleSendAssistantMessage(prompt);
-            }}
-          />
-        )}
+        <div
+          id={`panel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          tabIndex={0}
+          className="focus:outline-none"
+        >
+          {activeTab === 'ideas' && (
+            <IdeasTab
+              ideas={event.ideas}
+              isRegenerating={isRegenerating}
+              onRegenerateIdeas={handleRegenerateIdeas}
+              onSelectPrompt={(prompt) => {
+                setActiveTab('assistant');
+                handleSendAssistantMessage(prompt);
+              }}
+            />
+          )}
 
-        {activeTab === 'budget' && (
-          <BudgetTab
-            event={event}
-            onEventUpdated={setEvent}
-            onOpenEditExpense={handleOpenEditExpense}
-          />
-        )}
+          {activeTab === 'budget' && (
+            <BudgetTab
+              event={event}
+              onEventUpdated={setEvent}
+              onOpenEditExpense={handleOpenEditExpense}
+            />
+          )}
 
-        {activeTab === 'timeline' && (
-          <TimelineTab
-            event={event}
-            onEventUpdated={setEvent}
-          />
-        )}
+          {activeTab === 'timeline' && (
+            <TimelineTab
+              event={event}
+              onEventUpdated={setEvent}
+            />
+          )}
 
-        {activeTab === 'vendors' && (
-          <VendorsTab
-            event={event}
-            onEventUpdated={setEvent}
-          />
-        )}
+          {activeTab === 'vendors' && (
+            <VendorsTab
+              event={event}
+              onEventUpdated={setEvent}
+            />
+          )}
 
-        {activeTab === 'assistant' && (
-          <AssistantTab
-            messages={messages}
-            chatLoading={chatLoading}
-            suggestions={suggestions}
-            onSendMessage={handleSendAssistantMessage}
-          />
-        )}
+          {activeTab === 'assistant' && (
+            <AssistantTab
+              messages={messages}
+              chatLoading={chatLoading}
+              suggestions={suggestions}
+              onSendMessage={handleSendAssistantMessage}
+            />
+          )}
+        </div>
       </div>
 
       {/* ─── Modals ───────────────────────────────────────────────────────── */}

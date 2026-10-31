@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import {
   Calendar,
   MapPin,
@@ -50,8 +51,9 @@ export function EventsListPage() {
     try {
       await api.deleteEvent(id);
       setEvents((prev) => prev.filter((ev) => ev.id !== id));
-    } catch (err) {
-      alert('Could not delete event');
+      toast.success('Celebration deleted');
+    } catch (err: unknown) {
+      toast.error('Could not delete event');
     }
   };
 
@@ -86,7 +88,7 @@ export function EventsListPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter celebrations by type">
           {[
             { id: 'all', label: 'All Celebrations' },
             { id: 'wedding', label: 'Weddings' },
@@ -97,6 +99,8 @@ export function EventsListPage() {
           ].map((pill) => (
             <button
               key={pill.id}
+              type="button"
+              aria-pressed={filterType === pill.id}
               onClick={() => setFilterType(pill.id)}
               className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                 filterType === pill.id
@@ -153,77 +157,86 @@ export function EventsListPage() {
               const completedTasks = event.timeline.filter((t: TimelineItem) => t.isCompleted).length;
 
               return (
-                <div
+                <article
                   key={event.id}
-                  onClick={() => navigate(`/events/${event.id}`)}
-                  className="bg-white rounded-3xl border border-ivory-200 hover:border-gold/60 p-6 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+                  className="bg-white rounded-3xl border border-ivory-200 hover:border-gold/60 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-gold/10 to-transparent rounded-bl-full pointer-events-none" />
 
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <Badge variant="gold" size="sm">
-                        {formatEventType(event.type)}
-                      </Badge>
-                      <button
-                        onClick={(e) => handleDelete(e, event.id)}
-                        className="text-muted hover:text-red-600 p-1 rounded-lg transition-colors"
-                        title="Delete celebration"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
+                  {/* Header: Type Badge & Independent Delete Action */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <Badge variant="gold" size="sm">
+                      {formatEventType(event.type)}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, event.id)}
+                      className="relative z-10 text-muted hover:text-red-600 p-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      title="Delete celebration"
+                      aria-label={`Delete celebration: ${event.title}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
 
-                    <h3 className="font-display text-xl font-bold text-charcoal mb-2 group-hover:text-plum transition-colors line-clamp-1">
-                      {event.title}
-                    </h3>
+                  {/* Primary Navigation Link */}
+                  <Link
+                    to={`/events/${event.id}`}
+                    aria-label={`Open celebration dashboard for ${event.title}`}
+                    className="flex-1 flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold rounded-2xl group/link"
+                  >
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-charcoal mb-2 group-hover/link:text-plum group-hover:text-plum transition-colors line-clamp-1">
+                        {event.title}
+                      </h3>
 
-                    {event.description && (
-                      <p className="text-xs text-muted line-clamp-2 italic mb-4">
-                        &ldquo;{event.description}&rdquo;
-                      </p>
-                    )}
+                      {event.description && (
+                        <p className="text-xs text-muted line-clamp-2 italic mb-4">
+                          &ldquo;{event.description}&rdquo;
+                        </p>
+                      )}
 
-                    <div className="space-y-2 text-xs text-charcoal-light mb-6">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={14} className="text-plum shrink-0" />
-                        <span>{formatDate(event.eventDate)}</span>
-                        {daysUntil >= 0 && (
-                          <span className="text-[11px] font-semibold text-plum-light bg-plum-50 px-2 py-0.5 rounded-full ml-auto">
-                            {daysUntil === 0
-                              ? 'Today!'
-                              : daysUntil === 1
-                              ? 'Tomorrow'
-                              : `${daysUntil}d left`}
+                      <div className="space-y-2 text-xs text-charcoal-light mb-6">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-plum shrink-0" />
+                          <span>{formatDate(event.eventDate)}</span>
+                          {daysUntil >= 0 && (
+                            <span className="text-[11px] font-semibold text-plum-light bg-plum-50 px-2 py-0.5 rounded-full ml-auto">
+                              {daysUntil === 0
+                                ? 'Today!'
+                                : daysUntil === 1
+                                ? 'Tomorrow'
+                                : `${daysUntil}d left`}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className="text-gold shrink-0" />
+                          <span className="truncate">{event.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users size={14} className="text-muted shrink-0" />
+                          <span>{event.guestCount} guests</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign size={14} className="text-green-700 shrink-0" />
+                          <span className="font-semibold text-charcoal">
+                            {formatCurrency(event.budget.totalBudget, event.budget.currency)}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-gold shrink-0" />
-                        <span className="truncate">{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-muted shrink-0" />
-                        <span>{event.guestCount} guests</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign size={14} className="text-green-700 shrink-0" />
-                        <span className="font-semibold text-charcoal">
-                          {formatCurrency(event.budget.totalBudget, event.budget.currency)}
-                        </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pt-4 border-t border-ivory-200 flex items-center justify-between text-xs">
-                    <span className="text-muted">
-                      {completedTasks}/{event.timeline.length} Milestones
-                    </span>
-                    <span className="font-semibold text-plum flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                      Open Dashboard <ArrowRight size={14} />
-                    </span>
-                  </div>
-                </div>
+                    <div className="pt-4 border-t border-ivory-200 flex items-center justify-between text-xs">
+                      <span className="text-muted">
+                        {completedTasks}/{event.timeline.length} Milestones
+                      </span>
+                      <span className="font-semibold text-plum flex items-center gap-1 group-hover/link:translate-x-1 group-hover:translate-x-1 transition-transform">
+                        Open Dashboard <ArrowRight size={14} />
+                      </span>
+                    </div>
+                  </Link>
+                </article>
               );
             })}
           </div>

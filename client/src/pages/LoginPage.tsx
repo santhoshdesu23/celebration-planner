@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/lib/authContext';
 import { api } from '@/lib/api';
+import { getSafeRedirectPath } from '@/lib/utils';
 import { hasGuestDraft, getGuestDraft, getGuestDraftId, clearGuestDraft } from '@/lib/guestDraft';
 import { Button, Input, Card } from '@/components/ui';
 import { Sparkles, Lock, Mail, AlertCircle } from 'lucide-react';
@@ -18,7 +19,7 @@ export function LoginPage() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const redirectParam = queryParams.get('redirect');
-  const from = redirectParam || (location.state as { from?: string })?.from || '/events';
+  const from = getSafeRedirectPath(redirectParam || (location.state as { from?: string })?.from);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

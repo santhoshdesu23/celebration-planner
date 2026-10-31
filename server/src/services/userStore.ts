@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { User as UserType } from '@celebration-planner/shared';
 import { UserModel } from '../models/User.model.js';
-import { isDbConnected } from '../db/connection.js';
+import { useMongoStorage } from '../db/connection.js';
 
 // In-Memory store fallback
 const memoryUsers = new Map<string, UserType>();
@@ -21,7 +21,7 @@ export const userStore = {
       updatedAt: now,
     };
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const created = await UserModel.create(userRecord);
       const obj = (typeof created.toObject === 'function' ? created.toObject() : created) as UserType;
       // toObject transform strips passwordHash for serialization, but userStore returns the record
@@ -39,7 +39,7 @@ export const userStore = {
   async findByEmail(email: string): Promise<UserType | null> {
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const doc = await UserModel.findOne({ email: normalizedEmail }).lean();
       return (doc as UserType) || null;
     }
@@ -53,7 +53,7 @@ export const userStore = {
   },
 
   async findById(id: string): Promise<UserType | null> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const doc = await UserModel.findOne({ id }).lean();
       return (doc as UserType) || null;
     }
@@ -63,7 +63,7 @@ export const userStore = {
   },
 
   async clear(): Promise<void> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       await UserModel.deleteMany({});
     }
     memoryUsers.clear();

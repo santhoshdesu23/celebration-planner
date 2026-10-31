@@ -24,6 +24,18 @@ export default {
           700: '#2B0D26',
           800: '#1C0819',
           900: '#0D030C',
+          light: '#7B3F7A',
+        },
+        crimson: {
+          DEFAULT: '#DC2626',
+          50: '#FEF2F2',
+          100: '#FEE2E2',
+          200: '#FECACA',
+          300: '#FCA5A5',
+          400: '#F87171',
+          500: '#EF4444',
+          600: '#DC2626',
+          700: '#B91C1C',
         },
         gold: {
           DEFAULT: '#C9A84C',
@@ -42,7 +54,7 @@ export default {
           DEFAULT: '#2C2C2C',
           light: '#444444',
         },
-        muted: '#8B8B8B',
+        muted: '#6B6B6B',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

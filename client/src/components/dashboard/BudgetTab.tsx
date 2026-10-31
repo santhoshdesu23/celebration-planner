@@ -137,9 +137,16 @@ export function BudgetTab({
             Unallocated Buffer: {formatCurrency(Math.max(0, remainingBuffer), currency)}
           </span>
         </div>
-        <div className="h-4 bg-ivory-200 rounded-full overflow-hidden flex">
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round(Math.min(100, (estimatedTotal / Math.max(1, totalBudget)) * 100))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Budget allocation progress"
+          className="h-4 bg-ivory-200 rounded-full overflow-hidden flex"
+        >
           <div
-            style={{ width: `${Math.min(100, (estimatedTotal / totalBudget) * 100)}%` }}
+            style={{ width: `${Math.min(100, (estimatedTotal / Math.max(1, totalBudget)) * 100)}%` }}
             className={`h-full transition-all duration-500 ${
               estimatedTotal > totalBudget
                 ? 'bg-red-500'
@@ -197,14 +204,14 @@ export function BudgetTab({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table aria-label="Itemized expenses" className="w-full text-left text-sm">
               <thead className="bg-ivory-100/60 text-xs text-muted uppercase tracking-wider border-b border-ivory-200">
                 <tr>
-                  <th className="py-3 px-5">Paid</th>
-                  <th className="py-3 px-5">Category & Details</th>
-                  <th className="py-3 px-5 text-right">Estimated</th>
-                  <th className="py-3 px-5 text-right">Actual Cost</th>
-                  <th className="py-3 px-5 text-right">Actions</th>
+                  <th scope="col" className="py-3 px-5">Paid</th>
+                  <th scope="col" className="py-3 px-5">Category & Details</th>
+                  <th scope="col" className="py-3 px-5 text-right">Estimated</th>
+                  <th scope="col" className="py-3 px-5 text-right">Actual Cost</th>
+                  <th scope="col" className="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ivory-200">
@@ -212,12 +219,15 @@ export function BudgetTab({
                   <tr key={item.id} className="hover:bg-ivory-50/50 transition-colors">
                     <td className="py-4 px-5">
                       <button
+                        type="button"
                         onClick={() => handleTogglePaidExpense(item.id, item.isPaid)}
                         className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
                           item.isPaid
                             ? 'bg-green-600 text-white'
                             : 'border-2 border-ivory-300 text-transparent hover:border-plum'
                         }`}
+                        aria-label={item.isPaid ? `Mark ${item.category} unpaid` : `Mark ${item.category} paid`}
+                        aria-pressed={item.isPaid}
                         title={item.isPaid ? 'Mark as unpaid' : 'Mark as paid'}
                       >
                         <Check size={14} strokeWidth={3} />
@@ -249,18 +259,20 @@ export function BudgetTab({
                     </td>
                     <td className="py-4 px-5 text-right whitespace-nowrap">
                       <button
+                        type="button"
                         onClick={() => onOpenEditExpense(item)}
-                        className="text-muted hover:text-plum p-1 rounded-lg transition-colors mr-2"
+                        className="text-muted hover:text-plum p-1 rounded-lg transition-colors mr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                         title="Edit expense"
-                        aria-label="Edit expense"
+                        aria-label={`Edit expense: ${item.category}`}
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteExpense(item.id)}
-                        className="text-muted hover:text-red-600 p-1 rounded-lg transition-colors"
+                        className="text-muted hover:text-red-600 p-1 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                         title="Delete item"
-                        aria-label="Delete expense"
+                        aria-label={`Delete expense: ${item.category}`}
                       >
                         <Trash2 size={16} />
                       </button>

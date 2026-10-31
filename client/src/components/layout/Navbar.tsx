@@ -31,6 +31,23 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Keyboard navigation: Escape key closes menus and restores focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (profileOpen) {
+          setProfileOpen(false);
+          document.getElementById('profile-menu-button')?.focus();
+        } else if (mobileOpen) {
+          setMobileOpen(false);
+          document.getElementById('mobile-menu-toggle')?.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [profileOpen, mobileOpen]);
+
   const handleMobileLinkClick = () => {
     setMobileOpen(false);
     setProfileOpen(false);
@@ -109,6 +126,7 @@ export function Navbar() {
                 aria-label="User profile menu"
                 aria-haspopup="true"
                 aria-expanded={profileOpen}
+                aria-controls="profile-dropdown-menu"
                 onClick={() => setProfileOpen((prev) => !prev)}
                 className="flex items-center gap-2 p-1.5 pl-3 pr-2.5 rounded-full border border-ivory-300 hover:border-gold/50 bg-white/80 hover:bg-white shadow-sm transition-all text-sm font-medium text-plum"
               >
@@ -208,6 +226,7 @@ export function Navbar() {
         role="navigation"
         aria-label="Mobile navigation"
         aria-hidden={!mobileOpen}
+        hidden={!mobileOpen}
         className={cn(
           'md:hidden bg-white/95 backdrop-blur-md border-t border-ivory-200 overflow-hidden transition-all duration-300',
           mobileOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'

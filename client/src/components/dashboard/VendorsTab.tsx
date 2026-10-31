@@ -139,8 +139,12 @@ export function VendorsTab({ event, onEventUpdated }: VendorsTabProps) {
 
               <div className="pt-3 border-t border-ivory-200 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted">Status:</span>
+                  <label htmlFor={`vendor-status-${vendor.id}`} className="text-xs text-muted">
+                    Status:
+                  </label>
                   <select
+                    id={`vendor-status-${vendor.id}`}
+                    aria-label={`Status for ${vendor.name}`}
                     value={vendor.status}
                     onChange={(e) =>
                       handleUpdateVendorStatus(
@@ -161,9 +165,10 @@ export function VendorsTab({ event, onEventUpdated }: VendorsTabProps) {
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => handleDeleteVendor(vendor.id)}
-                  className="text-muted hover:text-red-600 p-1"
-                  aria-label="Delete vendor"
+                  className="text-muted hover:text-red-600 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded-lg"
+                  aria-label={`Delete vendor: ${vendor.name}`}
                   title="Delete vendor"
                 >
                   <Trash2 size={16} />

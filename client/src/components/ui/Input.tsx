@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { AlertCircle } from 'lucide-react';
 
@@ -27,7 +27,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : `input-${generatedId}`);
+    const describedByIds = [
+      error ? `${inputId}-error` : null,
+      hint ? `${inputId}-hint` : null,
+    ].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className={cn('flex flex-col gap-1.5', wrapperClassName)}>
@@ -59,14 +64,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             required={required}
+            aria-required={required}
             aria-invalid={!!error}
-            aria-describedby={
-              error
-                ? `${inputId}-error`
-                : hint
-                  ? `${inputId}-hint`
-                  : undefined
-            }
+            aria-describedby={describedByIds}
             className={cn(
               'w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-charcoal',
               'placeholder:text-muted transition-all duration-200',
@@ -93,7 +93,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
           {error && (
             <div
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500"
               aria-hidden="true"
             >
               <AlertCircle size={16} />
@@ -105,13 +105,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <p
             id={`${inputId}-error`}
             role="alert"
-            className="text-xs text-red-500 flex items-center gap-1"
+            className="text-xs text-red-600 flex items-center gap-1"
           >
             {error}
           </p>
         )}
 
-        {!error && hint && (
+        {hint && (
           <p id={`${inputId}-hint`} className="text-xs text-muted">
             {hint}
           </p>

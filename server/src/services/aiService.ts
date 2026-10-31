@@ -829,7 +829,7 @@ ${requirementsLine}`;
 
       const parsed = parseResult.data;
 
-      const ideas: AiIdea[] = (parsed.ideas || []).map((idea: any) => ({
+      const ideas: AiIdea[] = (parsed.ideas || []).map((idea) => ({
         id: crypto.randomUUID(),
         category: String(idea.category || 'General Idea'),
         title: String(idea.title || 'Creative Touch'),
@@ -839,7 +839,7 @@ ${requirementsLine}`;
 
       const budgetItems: BudgetItem[] = hasUserBudget
         ? event.budget.items!
-        : (parsed.budgetItems || []).map((item: any) => ({
+        : (parsed.budgetItems || []).map((item) => ({
             id: crypto.randomUUID(),
             category: String(item.category || 'Miscellaneous'),
             estimatedAmount: Number(item.estimatedAmount) || 100,
@@ -848,7 +848,7 @@ ${requirementsLine}`;
             isPaid: false,
           }));
 
-      const timeline: TimelineItem[] = (parsed.timeline || []).map((task: any) => {
+      const timeline: TimelineItem[] = (parsed.timeline || []).map((task) => {
         const days = Number(task.daysBefore) || 30;
         return {
           id: crypto.randomUUID(),
@@ -860,13 +860,13 @@ ${requirementsLine}`;
         };
       });
 
-      const vendors: Vendor[] = (parsed.vendors || []).map((v: any) => ({
+      const vendors: Vendor[] = (parsed.vendors || []).map((v) => ({
         id: crypto.randomUUID(),
         name: String(v.name || 'Local Vendor'),
         category: String(v.category || 'Vendor'),
-        status: ['not_contacted', 'contacted', 'quote_received'].includes(v.status)
+        status: (v.status && ['not_contacted', 'contacted', 'quote_received'].includes(v.status)
           ? v.status
-          : 'not_contacted',
+          : 'not_contacted') as Vendor['status'],
         estimatedCost: Number(v.estimatedCost) || 0,
         notes: String(v.notes || ''),
         isAiSuggested: true,

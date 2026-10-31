@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
-import { env, sanitizeErrorMessage, normalizeMongoUri } from '../config/env.js';
+import { env, sanitizeErrorMessage, normalizeMongoUri, requiresDurableStorage } from '../config/env.js';
+
+// Cap command buffering at 5s (mongoose default is 10s) when a command runs while disconnected
+mongoose.set('bufferTimeoutMS', 5000);
 
 let isConnected = false;
 let isUsingMemoryStore = false;
@@ -61,7 +64,8 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
   try {
     console.info('🔌 Connecting to MongoDB Atlas...');
     await mongoose.connect(normalizedUri, {
-      serverSelectionTimeoutMS: 3000,
+      // Production cannot fall back to memory, so allow a slower Atlas cold start before failing (503).
+      serverSelectionTimeoutMS: requiresDurableStorage() ? 5000 : 3000,
     });
 
     isConnected = true;
@@ -83,7 +87,9 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
     isUsingMemoryStore = true;
 
     console.warn(
-      `⚠️ Could not connect to MongoDB Atlas. Operating in EPHEMERAL IN-MEMORY fallback mode. (Notice: Data is non-durable). Reason: ${sanitizedError}`
+      requiresDurableStorage()
+        ? `⛔ Could not connect to MongoDB Atlas. Persistent storage is UNAVAILABLE; data routes will return 503 (no in-memory fallback in production). Reason: ${sanitizedError}`
+        : `⚠️ Could not connect to MongoDB Atlas. Operating in EPHEMERAL IN-MEMORY fallback mode. (Notice: Data is non-durable). Reason: ${sanitizedError}`
     );
     return false;
   }
@@ -95,6 +101,15 @@ export function isDbConnected(): boolean {
 
 export function isUsingMemory(): boolean {
   return !isDbConnected();
+}
+
+/**
+ * Storage selector for the data stores. In production (durable storage required) this is always
+ * true, so a dropped connection surfaces as an error instead of silently writing to ephemeral
+ * memory. In development and tests it mirrors the connection state (in-memory adapter preserved).
+ */
+export function useMongoStorage(): boolean {
+  return isDbConnected() || requiresDurableStorage();
 }
 
 export function getDbConnectionError(): string | null {

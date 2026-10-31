@@ -46,7 +46,13 @@ export function AssistantTab({
       {/* Chat Box */}
       <div className="bg-white rounded-3xl border border-ivory-200 p-5 shadow-sm flex flex-col h-[520px]">
         {/* Message History */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        <div
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          aria-label="Chat conversation history"
+          className="flex-1 overflow-y-auto space-y-4 pr-2"
+        >
           {messages.map((m, idx) => (
             <div
               key={idx}
@@ -92,7 +98,7 @@ export function AssistantTab({
                 type="button"
                 disabled={chatLoading}
                 onClick={() => onSendMessage(s)}
-                className="text-xs bg-ivory-100 hover:bg-gold/15 text-charcoal hover:text-plum border border-ivory-300 rounded-full px-3 py-1 transition-all text-left"
+                className="text-xs bg-ivory-100 hover:bg-gold/15 text-charcoal hover:text-plum border border-ivory-300 rounded-full px-3 py-1 transition-all text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
                 💡 {s}
               </button>
@@ -104,7 +110,9 @@ export function AssistantTab({
         <div className="pt-3 border-t border-ivory-200">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
+              id="assistant-chat-input"
               type="text"
+              aria-label="Message to celebration AI assistant"
               value={chatPrompt}
               onChange={(e) => setChatPrompt(e.target.value)}
               placeholder="Ask anything: e.g. 'Draft inquiry email to venue', 'Suggest budget cuts'…"
@@ -113,6 +121,7 @@ export function AssistantTab({
             <Button
               type="submit"
               variant="primary"
+              aria-label="Send message to AI assistant"
               disabled={!chatPrompt.trim() || chatLoading}
               rightIcon={<Send size={16} />}
             >

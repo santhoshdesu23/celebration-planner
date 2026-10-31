@@ -10,7 +10,7 @@ import type {
   AiIdea,
 } from '@celebration-planner/shared';
 import { EventModel } from '../models/Event.model.js';
-import { isDbConnected } from '../db/connection.js';
+import { useMongoStorage } from '../db/connection.js';
 
 export interface EventAiStatusInfo {
   eventId: string;
@@ -36,7 +36,7 @@ const memoryEvents = new Map<string, EventType>();
 
 export const eventStore = {
   async create(event: EventType): Promise<EventType> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const created = await EventModel.create(event);
       return created.toObject ? created.toObject() : (created as EventType);
     }
@@ -47,7 +47,7 @@ export const eventStore = {
   },
 
   async findById(id: string, ownerId: string): Promise<EventType | null> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const doc = await EventModel.findOne({ id, ownerId }).lean();
       return (doc as EventType) || null;
     }
@@ -61,7 +61,7 @@ export const eventStore = {
    * Avoids querying or transmitting bulky arrays (ideas, timeline, vendors, budget).
    */
   async findAiStatus(id: string, ownerId: string): Promise<EventAiStatusInfo | null> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const doc = await EventModel.findOne(
         { id, ownerId },
         {
@@ -104,7 +104,7 @@ export const eventStore = {
     const skip = filter?.skip ?? 0;
     const isSummary = Boolean(filter?.summary);
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const query: Record<string, string> = { ownerId };
       if (filter?.type) query.type = filter.type;
       if (filter?.status) query.status = filter.status;
@@ -174,7 +174,7 @@ export const eventStore = {
           totalBudget: e.budget?.totalBudget,
           items: [],
         },
-        timeline: (e.timeline || []).map((t: any) => ({
+        timeline: (e.timeline || []).map((t: TimelineItem) => ({
           id: t.id,
           title: t.title,
           dueDate: t.dueDate,
@@ -222,7 +222,7 @@ export const eventStore = {
     }
     const payload = { ...safeUpdates, updatedAt };
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id, ownerId },
         { $set: payload },
@@ -244,7 +244,7 @@ export const eventStore = {
   },
 
   async delete(id: string, ownerId: string): Promise<boolean> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const res = await EventModel.deleteOne({ id, ownerId });
       return (res.deletedCount ?? 0) > 0;
     }
@@ -256,7 +256,7 @@ export const eventStore = {
   },
 
   async clear(): Promise<void> {
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       await EventModel.deleteMany({});
     }
     memoryEvents.clear();
@@ -271,7 +271,7 @@ export const eventStore = {
   ): Promise<AddSubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId },
         {
@@ -310,7 +310,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const setFields: Record<string, unknown> = { updatedAt };
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) {
@@ -368,7 +368,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId, 'budget.items.id': itemId },
         {
@@ -417,7 +417,7 @@ export const eventStore = {
   ): Promise<AddSubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId },
         {
@@ -453,7 +453,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const setFields: Record<string, unknown> = { updatedAt };
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) {
@@ -508,7 +508,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId, 'timeline.id': itemId },
         {
@@ -554,7 +554,7 @@ export const eventStore = {
   ): Promise<AddSubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId },
         {
@@ -590,7 +590,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const setFields: Record<string, unknown> = { updatedAt };
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) {
@@ -645,7 +645,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId, 'vendors.id': vendorId },
         {
@@ -691,7 +691,7 @@ export const eventStore = {
   ): Promise<AddSubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId },
         {
@@ -726,7 +726,7 @@ export const eventStore = {
   ): Promise<SubResourceResult> {
     const updatedAt = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id: eventId, ownerId, 'ideas.id': ideaId },
         {
@@ -779,7 +779,7 @@ export const eventStore = {
     const nowISO = now.toISOString();
     const staleTimeISO = new Date(now.getTime() - staleThresholdMs).toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const doc = await EventModel.findOneAndUpdate(
         {
           id,
@@ -850,7 +850,7 @@ export const eventStore = {
   ): Promise<EventType | null> {
     const nowISO = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const existing = await EventModel.findOne({ id, ownerId }).lean();
       if (!existing) return null;
 
@@ -931,7 +931,7 @@ export const eventStore = {
   async failAiPlan(id: string, ownerId: string, errorMessage: string): Promise<EventType | null> {
     const nowISO = new Date().toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         { id, ownerId },
         {
@@ -970,7 +970,7 @@ export const eventStore = {
     const nowISO = now.toISOString();
     const staleTimeISO = new Date(now.getTime() - staleThresholdMs).toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const updated = await EventModel.findOneAndUpdate(
         {
           id,
@@ -1028,7 +1028,7 @@ export const eventStore = {
   async findPendingOrStaleAiPlans(staleThresholdMs = 120_000, limit = 20): Promise<EventType[]> {
     const staleTimeISO = new Date(Date.now() - staleThresholdMs).toISOString();
 
-    if (isDbConnected()) {
+    if (useMongoStorage()) {
       const docs = await EventModel.find({
         $or: [
           { aiPlanStatus: 'pending' },

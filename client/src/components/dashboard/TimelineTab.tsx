@@ -80,7 +80,14 @@ export function TimelineTab({ event, onEventUpdated }: TimelineTabProps) {
             </p>
           </div>
         </div>
-        <div className="w-36 h-2.5 bg-ivory-200 rounded-full overflow-hidden">
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round((completedMilestones / Math.max(1, event.timeline.length)) * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Milestones completion progress"
+          className="w-36 h-2.5 bg-ivory-200 rounded-full overflow-hidden"
+        >
           <div
             style={{
               width: `${Math.round(
@@ -110,9 +117,11 @@ export function TimelineTab({ event, onEventUpdated }: TimelineTabProps) {
               }`}
             >
               <button
+                type="button"
                 onClick={() => handleToggleMilestone(item.id, item.isCompleted)}
-                className="mt-0.5 text-muted hover:text-gold transition-colors"
-                aria-label={item.isCompleted ? 'Mark milestone pending' : 'Mark milestone completed'}
+                className="mt-0.5 text-muted hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label={item.isCompleted ? `Mark milestone pending: ${item.title}` : `Mark milestone completed: ${item.title}`}
+                aria-pressed={item.isCompleted}
                 title={item.isCompleted ? 'Mark pending' : 'Mark completed'}
               >
                 {item.isCompleted ? (
@@ -158,9 +167,10 @@ export function TimelineTab({ event, onEventUpdated }: TimelineTabProps) {
             </div>
 
             <button
+              type="button"
               onClick={() => handleDeleteMilestone(item.id)}
-              className="text-muted hover:text-red-600 p-1 transition-colors"
-              aria-label="Delete milestone"
+              className="text-muted hover:text-red-600 p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              aria-label={`Delete milestone: ${item.title}`}
               title="Delete milestone"
             >
               <Trash2 size={16} />

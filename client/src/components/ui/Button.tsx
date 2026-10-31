@@ -36,6 +36,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
+      type = 'button',
       variant = 'primary',
       size = 'md',
       loading = false,
@@ -53,6 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={isDisabled}
         aria-disabled={isDisabled}
         aria-busy={loading}
@@ -67,7 +69,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? (
-          <Loader2 className="animate-spin shrink-0" size={size === 'sm' ? 14 : 16} />
+          <>
+            <Loader2 className="animate-spin shrink-0" size={size === 'sm' ? 14 : 16} />
+            <span className="sr-only">Loading…</span>
+          </>
         ) : (
           leftIcon && <span className="shrink-0">{leftIcon}</span>
         )}

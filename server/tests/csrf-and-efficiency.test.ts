@@ -501,14 +501,14 @@ describe('P1 Fixes: AI Sanitization, CSRF Defense, & Budget Efficiency', () => {
 
       const customItems = [
         {
-          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
           category: 'Custom Venue Fee',
           estimatedAmount: 5000,
           actualAmount: 0,
           isPaid: true,
         },
         {
-          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
           category: 'Custom Live Band',
           estimatedAmount: 3000,
           actualAmount: 0,

@@ -7,11 +7,20 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { generalRateLimiter } from './middleware/rateLimiter.js';
 import { csrfProtection, isAllowedOrigin } from './middleware/csrf.js';
+import { createConfigGuard, createStorageGuard, noStoreApiResponses } from './middleware/safeguards.js';
 import healthRouter from './routes/health.js';
 import eventsRouter from './routes/events.js';
 import authRouter from './routes/auth.js';
 
-export function createApp() {
+export interface CreateAppOptions {
+  /**
+   * Establishes persistent storage (DB connection + migrations). Invoked by the storage guard BEFORE any
+   * protected route runs, so serverless cold starts never reach the stores with a closed connection.
+   */
+  ensureReady?: () => Promise<unknown>;
+}
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = express();
 
   // ── Trust reverse proxy (Vercel edge & lambdas) ─────────────────────────────
@@ -93,6 +102,15 @@ export function createApp() {
 
   // ── CSRF Protection (Double-submit cookie & Origin defense) ──────────────────
   app.use('/api', csrfProtection);
+
+  // ── API responses are never cacheable (session-specific data) ────────────────
+  app.use('/api', noStoreApiResponses);
+
+  // ── Fail closed on unsafe production configuration (e.g. weak JWT_SECRET) ────
+  app.use('/api', createConfigGuard());
+
+  // ── Fail closed (503) when production storage is unavailable; never use memory ─
+  app.use('/api', createStorageGuard({ ensureReady: options.ensureReady }));
 
   // ── Routes ──────────────────────────────────────────────────────────────────
   app.get(['/api', '/api/'], (_req, res) => {

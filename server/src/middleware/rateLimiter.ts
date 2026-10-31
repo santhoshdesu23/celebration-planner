@@ -1,4 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
+import { isDbConnected } from '../db/connection.js';
+import { formatSafeError } from '../config/env.js';
+import { mongoRateLimitStore, type SharedRateLimitStore } from '../services/rateLimitStore.js';
 
 interface RateLimitOptions {
   windowMs: number;
@@ -6,6 +9,14 @@ interface RateLimitOptions {
   message?: string;
   skipFailedRequests?: boolean;
   keyGenerator?: (req: Request) => string;
+  /**
+   * Identifier for this limiter. Required (with sharedStore) to count across serverless instances.
+   */
+  name?: string;
+  /** Cross-instance counter store (MongoDB). Without it, counters are per instance only. */
+  sharedStore?: SharedRateLimitStore;
+  /** Whether the shared store is usable right now. Defaults to the MongoDB connection state. */
+  useSharedStore?: () => boolean;
 }
 
 interface ClientRecord {
@@ -14,8 +25,9 @@ interface ClientRecord {
 }
 
 /**
- * Creates an in-memory sliding rate limiter middleware.
- * Fully typed, zero external dependencies, robust and safe.
+ * Creates a fixed-window rate limiter middleware.
+ * Counters are per serverless instance by default. When `name` and `sharedStore` are provided and the
+ * store is usable (MongoDB connected), counters are shared across instances instead.
  */
 export function createRateLimiter(options: RateLimitOptions) {
   const {
@@ -42,7 +54,20 @@ export function createRateLimiter(options: RateLimitOptions) {
     cleanupInterval.unref();
   }
 
-  return (req: Request, res: Response, next: NextFunction): void => {
+  const memoryHit = (clientKey: string, now: number): { count: number; resetTime: number } => {
+    let record = clients.get(clientKey);
+    if (!record || now > record.resetTime) {
+      record = { count: 1, resetTime: now + windowMs };
+      clients.set(clientKey, record);
+    } else {
+      record.count += 1;
+    }
+    return record;
+  };
+
+  const canUseShared = options.useSharedStore ?? isDbConnected;
+
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // In test environment, bypass rate limiter unless explicitly enabled
     if (process.env.NODE_ENV === 'test' && !req.headers['x-test-rate-limit']) {
       return next();
@@ -53,16 +78,17 @@ export function createRateLimiter(options: RateLimitOptions) {
       : (req.user ? `user:${req.user.id}` : req.ip) || req.socket.remoteAddress || 'unknown-client';
     const now = Date.now();
 
-    let record = clients.get(clientKey);
-
-    if (!record || now > record.resetTime) {
-      record = {
-        count: 1,
-        resetTime: now + windowMs,
-      };
-      clients.set(clientKey, record);
+    let record: { count: number; resetTime: number };
+    if (options.sharedStore && options.name && canUseShared()) {
+      try {
+        record = await options.sharedStore.hit(`${options.name}:${clientKey}`, windowMs, now);
+      } catch (err) {
+        // Availability over strictness: degrade to the per-instance counter if the store errors.
+        console.warn('[RateLimiter] Shared store unavailable, using per-instance counter:', formatSafeError(err));
+        record = memoryHit(clientKey, now);
+      }
     } else {
-      record.count += 1;
+      record = memoryHit(clientKey, now);
     }
 
     const remaining = Math.max(0, max - record.count);
@@ -91,6 +117,8 @@ export function createRateLimiter(options: RateLimitOptions) {
 
 /** Rate limiter for expensive AI generation and chat endpoints */
 export const aiRateLimiter = createRateLimiter({
+  name: 'ai',
+  sharedStore: mongoRateLimitStore,
   windowMs: 60 * 1000, // 1 minute
   max: 20, // 20 AI requests per minute
   message: 'AI generation rate limit exceeded. Please wait a moment before sending more requests.',
@@ -105,6 +133,8 @@ export const generalRateLimiter = createRateLimiter({
 
 /** Rate limiter for authentication endpoints to protect against brute-force attacks */
 export const authRateLimiter = createRateLimiter({
+  name: 'auth',
+  sharedStore: mongoRateLimitStore,
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // 30 auth attempts per 15 minutes
   message: 'Too many authentication attempts. Please try again later.',
@@ -112,6 +142,8 @@ export const authRateLimiter = createRateLimiter({
 
 /** Stricter rate limiter for unauthenticated guest AI plan generation to prevent abuse */
 export const guestAiRateLimiter = createRateLimiter({
+  name: 'guest-ai',
+  sharedStore: mongoRateLimitStore,
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 guest plans per 15 minutes per IP
   message: 'Guest celebration plan generation limit reached. Please wait a few minutes or log in to continue.',

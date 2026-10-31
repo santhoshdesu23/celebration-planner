@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, AlertCircle } from 'lucide-react';
 
@@ -33,7 +33,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     },
     ref
   ) => {
-    const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const selectId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : `select-${generatedId}`);
+    const describedByIds = [
+      error ? `${selectId}-error` : null,
+      hint ? `${selectId}-hint` : null,
+    ].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className={cn('flex flex-col gap-1.5', wrapperClassName)}>
@@ -56,14 +61,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             required={required}
+            aria-required={required}
             aria-invalid={!!error}
-            aria-describedby={
-              error
-                ? `${selectId}-error`
-                : hint
-                  ? `${selectId}-hint`
-                  : undefined
-            }
+            aria-describedby={describedByIds}
             className={cn(
               'w-full appearance-none rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm text-charcoal',
               'transition-all duration-200 cursor-pointer',
@@ -104,13 +104,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <p
             id={`${selectId}-error`}
             role="alert"
-            className="text-xs text-red-500"
+            className="text-xs text-red-600"
           >
             {error}
           </p>
         )}
 
-        {!error && hint && (
+        {hint && (
           <p id={`${selectId}-hint`} className="text-xs text-muted">
             {hint}
           </p>

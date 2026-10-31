@@ -19,6 +19,6 @@
   "dependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
-    "zod": "^3.23.0"
+    "zod": "^4.6.7"
   }
 }

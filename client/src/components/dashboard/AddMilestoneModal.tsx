@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Button } from '@/components/ui';
+import { Button, Modal } from '@/components/ui';
 import { api } from '@/lib/api';
 import type { Event as EventType } from '@celebration-planner/shared';
 
@@ -24,8 +24,6 @@ export function AddMilestoneModal({
     category: 'General',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,77 +53,75 @@ export function AddMilestoneModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-ivory-200">
-        <h3 className="font-display text-xl font-bold text-charcoal mb-4">
-          Add Timeline Milestone
-        </h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-charcoal mb-1">
-              Task Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
-              }
-              placeholder="e.g. Finalize seating chart & place cards"
-              className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
-            />
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Add Timeline Milestone">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="add-milestone-title" className="block text-xs font-semibold text-charcoal mb-1">
+            Task Title *
+          </label>
+          <input
+            id="add-milestone-title"
+            type="text"
+            required
+            value={form.title}
+            onChange={(e) =>
+              setForm({ ...form, title: e.target.value })
+            }
+            placeholder="e.g. Finalize seating chart & place cards"
+            className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
+          />
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-charcoal mb-1">
-              Target Due Date *
-            </label>
-            <input
-              type="date"
-              required
-              value={form.dueDate}
-              onChange={(e) =>
-                setForm({ ...form, dueDate: e.target.value })
-              }
-              className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
-            />
-          </div>
+        <div>
+          <label htmlFor="add-milestone-date" className="block text-xs font-semibold text-charcoal mb-1">
+            Target Due Date *
+          </label>
+          <input
+            id="add-milestone-date"
+            type="date"
+            required
+            value={form.dueDate}
+            onChange={(e) =>
+              setForm({ ...form, dueDate: e.target.value })
+            }
+            className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
+          />
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-charcoal mb-1">
-              Description
-            </label>
-            <textarea
-              rows={2}
-              value={form.description}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  description: e.target.value,
-                })
-              }
-              placeholder="Details, assigned contact, or instructions"
-              className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
-            />
-          </div>
+        <div>
+          <label htmlFor="add-milestone-desc" className="block text-xs font-semibold text-charcoal mb-1">
+            Description
+          </label>
+          <textarea
+            id="add-milestone-desc"
+            rows={2}
+            value={form.description}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                description: e.target.value,
+              })
+            }
+            placeholder="Details, assigned contact, or instructions"
+            className="w-full rounded-xl border border-ivory-300 px-3 py-2 text-sm focus:ring-2 focus:ring-gold"
+          />
+        </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="flex-1"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" className="flex-1" loading={isSubmitting}>
-              Add Milestone
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-2 pt-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex-1"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" className="flex-1" loading={isSubmitting}>
+            Add Milestone
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

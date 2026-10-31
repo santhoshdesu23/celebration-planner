@@ -58,6 +58,29 @@ export function errorHandler(
     return;
   }
 
+  // Database connectivity failures: report "unavailable" (retryable) rather than a generic 500.
+  const errName = err instanceof Error ? err.name : '';
+  if (
+    [
+      'MongoNetworkError',
+      'MongoNetworkTimeoutError',
+      'MongoServerSelectionError',
+      'MongooseServerSelectionError',
+    ].includes(errName) ||
+    (err instanceof Error && /buffering timed out/i.test(err.message))
+  ) {
+    console.error('Storage unavailable:', formatSafeError(err));
+    res.setHeader('Retry-After', 5);
+    res.status(503).json({
+      success: false,
+      error: {
+        code: 'STORAGE_UNAVAILABLE',
+        message: 'Persistent storage is temporarily unavailable. Please try again shortly.',
+      },
+    });
+    return;
+  }
+
   // Unknown error — log safe message without leaking credentials or stacks
   console.error('Unhandled error:', formatSafeError(err));
   const body: ApiErrorResponse = {
