@@ -34,6 +34,30 @@ export type SubResourceResult<T = EventType> =
 // In-Memory store fallback
 const memoryEvents = new Map<string, EventType>();
 
+/** In-memory adapter only: the stored event if it exists AND belongs to ownerId, otherwise undefined. */
+function getOwnedMemoryEvent(id: string, ownerId: string): EventType | undefined {
+  const event = memoryEvents.get(id);
+  return event && event.ownerId === ownerId ? event : undefined;
+}
+
+/** Deep copy so callers can never mutate stored state (JSON-safe event data only). */
+function cloneEvent<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/**
+ * Strips properties whose value is undefined so in-memory spread merges mirror MongoDB $set semantics.
+ */
+function filterDefined<T extends Record<string, unknown>>(updates: T): Partial<T> {
+  const result: Partial<T> = {};
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      (result as Record<string, unknown>)[key] = value;
+    }
+  }
+  return result;
+}
+
 export const eventStore = {
   async create(event: EventType): Promise<EventType> {
     if (useMongoStorage()) {
@@ -41,7 +65,7 @@ export const eventStore = {
       return created.toObject ? created.toObject() : (created as EventType);
     }
     // Deep clone to prevent mutation bugs
-    const cloned = JSON.parse(JSON.stringify(event));
+    const cloned = cloneEvent(event);
     memoryEvents.set(event.id, cloned);
     return cloned;
   },
@@ -51,9 +75,9 @@ export const eventStore = {
       const doc = await EventModel.findOne({ id, ownerId }).lean();
       return (doc as EventType) || null;
     }
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
-    return JSON.parse(JSON.stringify(event));
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
+    return cloneEvent(event);
   },
 
   /**
@@ -86,8 +110,8 @@ export const eventStore = {
       };
     }
 
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
     return {
       eventId: event.id,
       aiPlanStatus: event.aiPlanStatus || 'completed',
@@ -153,7 +177,7 @@ export const eventStore = {
     }
     // Sort descending by createdAt
     const sorted = all
-      .map((e) => JSON.parse(JSON.stringify(e)))
+      .map((e) => cloneEvent(e))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const sliced = filter?.skip || filter?.limit ? sorted.slice(skip, skip + limit) : sorted;
@@ -231,8 +255,8 @@ export const eventStore = {
       return (updated as EventType) || null;
     }
 
-    const existing = memoryEvents.get(id);
-    if (!existing || existing.ownerId !== ownerId) return null;
+    const existing = getOwnedMemoryEvent(id, ownerId);
+    if (!existing) return null;
 
     const merged: EventType = {
       ...existing,
@@ -240,7 +264,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(id, merged);
-    return JSON.parse(JSON.stringify(merged));
+    return cloneEvent(merged);
   },
 
   async delete(id: string, ownerId: string): Promise<boolean> {
@@ -248,8 +272,8 @@ export const eventStore = {
       const res = await EventModel.deleteOne({ id, ownerId });
       return (res.deletedCount ?? 0) > 0;
     }
-    const existing = memoryEvents.get(id);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(id, ownerId);
+    if (!existing) {
       return false;
     }
     return memoryEvents.delete(id);
@@ -286,8 +310,8 @@ export const eventStore = {
       return { status: 'SUCCESS', data: updated as EventType };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
     const updated: EventType = {
@@ -299,7 +323,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async updateBudgetItem(
@@ -336,8 +360,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -346,8 +370,9 @@ export const eventStore = {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
+    const cleanUpdates = filterDefined(updates as Record<string, unknown>);
     const newItems = [...existing.budget.items];
-    newItems[index] = { ...newItems[index], ...updates };
+    newItems[index] = { ...newItems[index], ...cleanUpdates };
 
     const updated: EventType = {
       ...existing,
@@ -358,7 +383,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async deleteBudgetItem(
@@ -386,8 +411,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -405,7 +430,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   // ─── Targeted Sub-Resource Operations: Timeline Milestones ───────────────────
@@ -432,8 +457,8 @@ export const eventStore = {
       return { status: 'SUCCESS', data: updated as EventType };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
     const updated: EventType = {
@@ -442,7 +467,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async updateTimelineItem(
@@ -479,8 +504,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -489,8 +514,9 @@ export const eventStore = {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
+    const cleanUpdates = filterDefined(updates as Record<string, unknown>);
     const newTimeline = [...existing.timeline];
-    newTimeline[index] = { ...newTimeline[index], ...updates };
+    newTimeline[index] = { ...newTimeline[index], ...cleanUpdates };
 
     const updated: EventType = {
       ...existing,
@@ -498,7 +524,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async deleteTimelineItem(
@@ -526,8 +552,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -542,7 +568,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   // ─── Targeted Sub-Resource Operations: Vendors ───────────────────────────────
@@ -569,8 +595,8 @@ export const eventStore = {
       return { status: 'SUCCESS', data: updated as EventType };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
     const updated: EventType = {
@@ -579,7 +605,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async updateVendor(
@@ -616,8 +642,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -626,8 +652,9 @@ export const eventStore = {
       return { status: 'ITEM_NOT_FOUND' };
     }
 
+    const cleanUpdates = filterDefined(updates as Record<string, unknown>);
     const newVendors = [...existing.vendors];
-    newVendors[index] = { ...newVendors[index], ...updates };
+    newVendors[index] = { ...newVendors[index], ...cleanUpdates };
 
     const updated: EventType = {
       ...existing,
@@ -635,7 +662,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async deleteVendor(
@@ -663,8 +690,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -679,7 +706,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   // ─── Targeted Sub-Resource Operations: Ideas ─────────────────────────────────
@@ -706,8 +733,8 @@ export const eventStore = {
       return { status: 'SUCCESS', data: updated as EventType };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
     const updated: EventType = {
@@ -716,7 +743,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   async deleteIdea(
@@ -744,8 +771,8 @@ export const eventStore = {
       return { status: eventExists ? 'ITEM_NOT_FOUND' : 'EVENT_NOT_FOUND' };
     }
 
-    const existing = memoryEvents.get(eventId);
-    if (!existing || existing.ownerId !== ownerId) {
+    const existing = getOwnedMemoryEvent(eventId, ownerId);
+    if (!existing) {
       return { status: 'EVENT_NOT_FOUND' };
     }
 
@@ -760,7 +787,7 @@ export const eventStore = {
       updatedAt,
     };
     memoryEvents.set(eventId, updated);
-    return { status: 'SUCCESS', data: JSON.parse(JSON.stringify(updated)) };
+    return { status: 'SUCCESS', data: cloneEvent(updated) };
   },
 
   // ─── AI PLAN ASYNC LIFECYCLE ────────────────────────────────────────────────
@@ -810,8 +837,8 @@ export const eventStore = {
       return (doc as EventType) || null;
     }
 
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
 
     const isStale =
       event.aiPlanStatus === 'processing' &&
@@ -831,7 +858,7 @@ export const eventStore = {
     event.aiPlanError = null;
     event.aiPlanRetryCount = (event.aiPlanRetryCount || 0) + 1;
     event.updatedAt = nowISO;
-    return JSON.parse(JSON.stringify(event));
+    return cloneEvent(event);
   },
 
   /**
@@ -893,8 +920,8 @@ export const eventStore = {
       return (updated as EventType) || null;
     }
 
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
 
     const existingItems = event.budget?.items || [];
     const shouldFillBudget = existingItems.length === 0 && Boolean(plan.budgetItems && plan.budgetItems.length > 0);
@@ -922,7 +949,7 @@ export const eventStore = {
     event.aiPlanError = null;
     event.updatedAt = nowISO;
 
-    return JSON.parse(JSON.stringify(event));
+    return cloneEvent(event);
   },
 
   /**
@@ -947,15 +974,15 @@ export const eventStore = {
       return (updated as EventType) || null;
     }
 
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
 
     event.aiPlanStatus = 'failed';
     event.aiPlanError = errorMessage.slice(0, 1000);
     event.aiPlanCompletedAt = nowISO;
     event.updatedAt = nowISO;
 
-    return JSON.parse(JSON.stringify(event));
+    return cloneEvent(event);
   },
 
   /**
@@ -999,8 +1026,8 @@ export const eventStore = {
       return (updated as EventType) || null;
     }
 
-    const event = memoryEvents.get(id);
-    if (!event || event.ownerId !== ownerId) return null;
+    const event = getOwnedMemoryEvent(id, ownerId);
+    if (!event) return null;
 
     const isStale =
       (event.aiPlanStatus === 'processing' || event.aiPlanStatus === 'pending') &&
@@ -1019,7 +1046,7 @@ export const eventStore = {
     event.aiPlanStatus = 'pending';
     event.aiPlanError = null;
     event.updatedAt = nowISO;
-    return JSON.parse(JSON.stringify(event));
+    return cloneEvent(event);
   },
 
   /**
@@ -1059,6 +1086,6 @@ export const eventStore = {
       return false;
     });
 
-    return candidates.slice(0, limit).map((e) => JSON.parse(JSON.stringify(e)));
+    return candidates.slice(0, limit).map((e) => cloneEvent(e));
   },
 };

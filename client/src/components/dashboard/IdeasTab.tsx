@@ -91,6 +91,7 @@ export function IdeasTab({
           ].map((prompt, pIdx) => (
             <button
               key={pIdx}
+              type="button"
               onClick={() => onSelectPrompt(prompt)}
               className="text-xs font-medium bg-white hover:bg-gold/10 hover:border-gold border border-plum-200 text-charcoal px-3 py-2 rounded-xl transition-colors shadow-2xs"
             >

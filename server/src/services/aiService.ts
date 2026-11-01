@@ -38,13 +38,18 @@ export function sanitizeForPrompt(text: string, maxLength = 2000): string {
 }
 
 /** Helper to enforce timeouts on external LLM network requests */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout: ${label} exceeded ${timeoutMs}ms`)), timeoutMs)
-    ),
-  ]);
+export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Timeout: ${label} exceeded ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  });
 }
 
 /**
@@ -96,6 +101,22 @@ class AiCircuitBreaker {
 }
 
 export const aiCircuitBreaker = new AiCircuitBreaker();
+
+/** Gemini model used for both plan generation and the assistant. */
+const GEMINI_MODEL_NAME = 'gemini-3.1-flash-lite';
+
+/**
+ * True when Gemini must not be called and the deterministic domain fallback should be used:
+ * in test runs, when no real API key is configured, or while the circuit breaker is open.
+ */
+function shouldUseDomainFallback(): boolean {
+  const isTest = process.env.NODE_ENV === 'test';
+  const isKeyPlaceholder =
+    !env.GEMINI_API_KEY ||
+    env.GEMINI_API_KEY.includes('your_gemini') ||
+    env.GEMINI_API_KEY.includes('placeholder');
+  return isTest || isKeyPlaceholder || aiCircuitBreaker.isOpen();
+}
 
 
 const RawGeminiPlanSchema = z.object({
@@ -159,7 +180,7 @@ function calculateRelativeDate(eventDateStr: string, daysBefore: number): string
 function generateDomainFallbackPlan(
   event: Pick<EventType, 'title' | 'type' | 'eventDate' | 'guestCount' | 'location' | 'description' | 'budget'>
 ): GeneratedPlan {
-  const { title, type, eventDate, guestCount, location, description, budget } = event;
+  const { type, eventDate, guestCount, location, budget } = event;
   const total = budget.totalBudget || 5000;
 
   // 1. Domain-specific Ideas
@@ -710,13 +731,7 @@ export const aiService = {
   async generateEventPlan(
     event: Pick<EventType, 'title' | 'type' | 'eventDate' | 'guestCount' | 'location' | 'description' | 'budget'>
   ): Promise<GeneratedPlan> {
-    const isTest = process.env.NODE_ENV === 'test';
-    const isKeyPlaceholder =
-      !env.GEMINI_API_KEY ||
-      env.GEMINI_API_KEY.includes('your_gemini') ||
-      env.GEMINI_API_KEY.includes('placeholder');
-
-    if (isTest || isKeyPlaceholder || aiCircuitBreaker.isOpen()) {
+    if (shouldUseDomainFallback()) {
       return generateDomainFallbackPlan(event);
     }
 
@@ -724,7 +739,7 @@ export const aiService = {
       console.info('🤖 Calling Google Gemini API to generate comprehensive event plan...');
       const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
       const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: GEMINI_MODEL_NAME,
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.7,
@@ -896,16 +911,10 @@ ${requirementsLine}`;
     userPrompt: string,
     contextType: string = 'general'
   ): Promise<AiAssistResponse> {
-    const isTest = process.env.NODE_ENV === 'test';
-    const isKeyPlaceholder =
-      !env.GEMINI_API_KEY ||
-      env.GEMINI_API_KEY.includes('your_gemini') ||
-      env.GEMINI_API_KEY.includes('placeholder');
-
-    if (!isTest && !isKeyPlaceholder && !aiCircuitBreaker.isOpen()) {
+    if (!shouldUseDomainFallback()) {
       try {
         const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
         const safeTitle = sanitizeForPrompt(event.title, 200);
         const safeLocation = sanitizeForPrompt(event.location, 200);
         const safeContext = sanitizeForPrompt(contextType, 100);

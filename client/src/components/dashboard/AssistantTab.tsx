@@ -96,6 +96,7 @@ export function AssistantTab({
               <button
                 key={idx}
                 type="button"
+                aria-label={`Ask AI assistant: ${s}`}
                 disabled={chatLoading}
                 onClick={() => onSendMessage(s)}
                 className="text-xs bg-ivory-100 hover:bg-gold/15 text-charcoal hover:text-plum border border-ivory-300 rounded-full px-3 py-1 transition-all text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"

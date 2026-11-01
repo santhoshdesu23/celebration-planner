@@ -122,6 +122,7 @@ export function Navbar() {
           {isAuthenticated ? (
             <div className="relative" ref={profileRef}>
               <button
+                type="button"
                 id="profile-menu-button"
                 aria-label="User profile menu"
                 aria-haspopup="true"
@@ -173,6 +174,7 @@ export function Navbar() {
                   <div className="my-1 border-t border-ivory-200" />
 
                   <button
+                    type="button"
                     role="menuitem"
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-crimson hover:bg-crimson-50 rounded-lg transition-colors text-left font-medium"
@@ -209,6 +211,7 @@ export function Navbar() {
 
         {/* ── Mobile hamburger ─────────────────────────────────────────── */}
         <button
+          type="button"
           id="mobile-menu-toggle"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileOpen}

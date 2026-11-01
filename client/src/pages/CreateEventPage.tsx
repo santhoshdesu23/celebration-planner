@@ -12,6 +12,7 @@ import { useEventWizard } from '@/hooks/useEventWizard';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import { setGuestDraft } from '@/lib/guestDraft';
+import { EventTypeEnum } from '@celebration-planner/shared';
 import type { EventType, CreateEventInput } from '@celebration-planner/shared';
 import type { WizardStep } from '@/hooks/useEventWizard';
 
@@ -37,13 +38,13 @@ export function CreateEventPage() {
   } = useEventWizard();
 
   // Pre-fill event type from URL params (e.g. ?type=wedding from category cards)
+  // The param is validated against the shared enum; unknown values are ignored.
   useEffect(() => {
-    const typeParam = searchParams.get('type') as EventType | null;
-    if (typeParam && !formData.type) {
-      updateField('type', typeParam);
+    const parsedType = EventTypeEnum.safeParse(searchParams.get('type'));
+    if (parsedType.success && !formData.type) {
+      updateField('type', parsedType.data);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams, formData.type, updateField]);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);

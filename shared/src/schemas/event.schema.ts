@@ -92,12 +92,24 @@ export type Vendor = z.infer<typeof VendorSchema>;
 export const UpdateVendorSchema = VendorSchema.omit({ id: true }).partial().strict();
 export type UpdateVendorInput = z.infer<typeof UpdateVendorSchema>;
 
+/**
+ * Query-compatible boolean parser for URL query parameters and JSON payloads.
+ * Correctly distinguishes "false" / "0" (false) from "true" / "1" (true),
+ * avoiding z.coerce.boolean() which coerces non-empty strings like "false" to true.
+ */
+export const QueryBooleanSchema = z.preprocess((val) => {
+  if (val === undefined || val === '') return undefined;
+  if (val === 'true' || val === '1' || val === true || val === 1) return true;
+  if (val === 'false' || val === '0' || val === false || val === 0) return false;
+  return val;
+}, z.boolean().optional());
+
 export const EventQueryFilterSchema = z.object({
   type: EventTypeEnum.optional(),
   status: EventStatusEnum.optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
   skip: z.coerce.number().int().nonnegative().optional(),
-  summary: z.coerce.boolean().optional(),
+  summary: QueryBooleanSchema,
 });
 export type EventQueryFilter = z.infer<typeof EventQueryFilterSchema>;
 

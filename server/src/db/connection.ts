@@ -5,7 +5,6 @@ import { env, sanitizeErrorMessage, normalizeMongoUri, requiresDurableStorage } 
 mongoose.set('bufferTimeoutMS', 5000);
 
 let isConnected = false;
-let isUsingMemoryStore = false;
 let connectionError: string | null = null;
 let listenersAttached = false;
 
@@ -15,18 +14,15 @@ function setupConnectionListeners(): void {
 
   mongoose.connection.on('connected', () => {
     isConnected = true;
-    isUsingMemoryStore = false;
     connectionError = null;
   });
 
   mongoose.connection.on('disconnected', () => {
     isConnected = false;
-    isUsingMemoryStore = true;
   });
 
   mongoose.connection.on('reconnected', () => {
     isConnected = true;
-    isUsingMemoryStore = false;
     connectionError = null;
   });
 
@@ -46,7 +42,6 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
       'ℹ️ MONGODB_URI not provided. Operating in EPHEMERAL IN-MEMORY mode. (Notice: Non-durable; data resets on restart).'
     );
     isConnected = false;
-    isUsingMemoryStore = true;
     connectionError = null;
     return false;
   }
@@ -54,7 +49,6 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
   // If already connected, return true immediately
   if (mongoose.connection.readyState === 1) {
     isConnected = true;
-    isUsingMemoryStore = false;
     connectionError = null;
     return true;
   }
@@ -69,7 +63,6 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
     });
 
     isConnected = true;
-    isUsingMemoryStore = false;
     connectionError = null;
 
     const clusterHost = mongoose.connection.host || 'MongoDB Atlas';
@@ -84,7 +77,6 @@ export async function connectDatabase(customUri?: string): Promise<boolean> {
 
     connectionError = sanitizedError;
     isConnected = false;
-    isUsingMemoryStore = true;
 
     console.warn(
       requiresDurableStorage()
@@ -121,7 +113,6 @@ export async function disconnectDatabase(): Promise<void> {
     await mongoose.disconnect();
   }
   isConnected = false;
-  isUsingMemoryStore = true;
 }
 
 /**
@@ -129,7 +120,6 @@ export async function disconnectDatabase(): Promise<void> {
  */
 export function _resetConnectionStateForTest(): void {
   isConnected = false;
-  isUsingMemoryStore = false;
   connectionError = null;
 }
 

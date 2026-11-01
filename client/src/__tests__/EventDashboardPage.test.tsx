@@ -166,6 +166,49 @@ describe('EventDashboardPage Component', () => {
     expect(screen.getByPlaceholderText(/ask anything/i)).toBeInTheDocument();
   });
 
+  it('initializes the assistant greeting once with the event title', async () => {
+    (api.getEvent as any).mockResolvedValue(mockEvent);
+    (api.getHealth as any).mockResolvedValue({
+      status: 'ok',
+      storage: { type: 'mongodb', isDurable: true },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/events/evt-456']}>
+        <Routes>
+          <Route path="/events/:id" element={<EventDashboardPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Sapphire Anniversary Ball')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /celebration ai chat/i }));
+
+    const greetings = screen.getAllByText(/I am your Celebration AI Assistant for/i);
+    expect(greetings).toHaveLength(1);
+    expect(greetings[0].textContent).toContain('Sapphire Anniversary Ball');
+  });
+
+  it('does not poll AI status for an event that is already completed', async () => {
+    (api.getEvent as any).mockResolvedValue(mockEvent);
+    (api.getHealth as any).mockResolvedValue({ status: 'ok', storage: { type: 'mongodb', isDurable: true } });
+
+    render(
+      <MemoryRouter initialEntries={['/events/evt-456']}>
+        <Routes>
+          <Route path="/events/:id" element={<EventDashboardPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Sapphire Anniversary Ball')).toBeInTheDocument();
+    });
+    expect(api.getAiStatus).not.toHaveBeenCalled();
+  });
+
   it('renders error state when event fetch fails and provides back button', async () => {
     (api.getEvent as any).mockRejectedValueOnce(new Error('Event not found or unauthorized'));
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -30,6 +30,8 @@ import {
   type ChatMessage,
 } from '@/components/dashboard';
 import { useAuth } from '@/lib/authContext';
+import { useAiPlanPolling } from '@/hooks/useAiPlanPolling';
+import { buildGreetingMessages } from '@/lib/assistantGreeting';
 import {
   getGuestDraft,
   setGuestDraft,
@@ -86,7 +88,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
   const [isRetryingAi, setIsRetryingAi] = useState(false);
 
   // Fetch event
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -96,15 +98,8 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
         const draft = getGuestDraft();
         if (draft) {
           setEvent(draft);
-          if (messages.length === 0) {
-            setMessages([
-              {
-                sender: 'ai',
-                text: `👋 Hello! I am your Celebration AI Assistant for **${draft.title}**. You can ask me for budget trimming ideas, vendor inquiry templates, games, or run-of-show schedules!`,
-                time: 'Just now',
-              },
-            ]);
-          }
+          // Functional update keeps this callback independent of the current message list.
+          setMessages((prev) => (prev.length > 0 ? prev : buildGreetingMessages(draft.title)));
         } else {
           setError('No guest celebration plan found. Start by planning your celebration!');
         }
@@ -130,15 +125,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       }
 
       // Initialize assistant greeting
-      if (messages.length === 0) {
-        setMessages([
-          {
-            sender: 'ai',
-            text: `👋 Hello! I am your Celebration AI Assistant for **${data.title}**. You can ask me for budget trimming ideas, vendor inquiry templates, games, or run-of-show schedules!`,
-            time: 'Just now',
-          },
-        ]);
-      }
+      setMessages((prev) => (prev.length > 0 ? prev : buildGreetingMessages(data.title)));
     } catch (err: unknown) {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Could not load event plan';
@@ -146,68 +133,14 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, isGuestMode]);
 
   useEffect(() => {
     fetchEvent();
-  }, [id, isGuestMode]);
+  }, [fetchEvent]);
 
   // Adaptive polling for AI completion when status is pending or processing
-  useEffect(() => {
-    if (isGuestMode || !id || !event) return;
-    if (event.aiPlanStatus !== 'pending' && event.aiPlanStatus !== 'processing') return;
-
-    let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let delay = 1500;
-
-    const poll = async () => {
-      try {
-        const statusRes = await api.getAiStatus(id);
-        if (!isMounted) return;
-
-        if (statusRes.aiPlanStatus === 'completed') {
-          const updatedEvent = await api.getEvent(id);
-          if (isMounted) {
-            setEvent(updatedEvent);
-            toast.success('🎉 Bespoke celebration plan ready with ideas and timeline!');
-          }
-          return;
-        } else if (statusRes.aiPlanStatus === 'failed') {
-          if (isMounted) {
-            setEvent((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    aiPlanStatus: 'failed',
-                    aiPlanError: statusRes.aiPlanError || 'AI plan generation failed',
-                  }
-                : null
-            );
-            toast.error('AI plan generation encountered an issue. You can retry anytime.');
-          }
-          return;
-        }
-      } catch {
-        // Non-fatal polling error; back off and retry
-      }
-
-      if (isMounted) {
-        // Adaptive linear backoff: 1.5s -> 2.5s -> 3.5s -> max 4.5s
-        delay = Math.min(delay + 1000, 4500);
-        timeoutId = setTimeout(poll, delay);
-      }
-    };
-
-    timeoutId = setTimeout(poll, delay);
-
-    return () => {
-      isMounted = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [id, event?.aiPlanStatus, isGuestMode]);
+  useAiPlanPolling(id, event?.aiPlanStatus, !isGuestMode, setEvent);
 
   // Memoized days until event & milestone counts
   const daysUntil = useMemo(() => {
@@ -293,7 +226,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       await api.deleteEvent(event.id);
       toast.success('Celebration plan deleted');
       navigate('/events');
-    } catch (err: unknown) {
+    } catch {
       toast.error('Failed to delete event');
     }
   };
@@ -347,7 +280,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       document.body.removeChild(downloadAnchor);
       URL.revokeObjectURL(url);
       toast.success('Event plan exported to JSON!');
-    } catch (err) {
+    } catch {
       toast.error('Failed to export event plan');
     }
   };
@@ -358,7 +291,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       const updated = await api.regenerateAiPlan(event.id);
       setEvent(updated);
       toast.success('✨ Fresh AI ideas & recommendations generated!');
-    } catch (err: unknown) {
+    } catch {
       toast.error('Could not refresh AI ideas');
     } finally {
       setIsRegenerating(false);
@@ -388,7 +321,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
       if (res.suggestions && Array.isArray(res.suggestions) && res.suggestions.length > 0) {
         setSuggestions(res.suggestions);
       }
-    } catch (err: unknown) {
+    } catch {
       toast.error('AI assistant was unable to reply. Please retry.');
     } finally {
       setChatLoading(false);
@@ -499,6 +432,7 @@ export function EventDashboardPage({ isGuest = false }: EventDashboardPageProps 
                 'MongoDB is currently disconnected. Changes are kept in memory for this session and will reset if the server restarts. Use "Export JSON" to preserve your celebration plan offline.'}
             </div>
             <button
+              type="button"
               onClick={handleExportPlan}
               className="font-semibold underline hover:text-amber-700 whitespace-nowrap ml-2"
             >

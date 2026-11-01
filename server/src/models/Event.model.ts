@@ -59,7 +59,7 @@ const AiIdeaSchema = new Schema(
 
 const EventMongoSchema = new Schema<EventType>(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    id: { type: String, required: true, unique: true },
     ownerId: { type: String, required: true, index: true },
     title: { type: String, required: true },
     type: {

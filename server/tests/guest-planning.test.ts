@@ -101,6 +101,127 @@ describe('Guest Planning API (/api/events/guest-plan & save-guest-plan)', () => 
     expect(typeof assistRes.body.data.response).toBe('string');
   });
 
+  describe('Guest AI Assist Schema Strictness & Security Validation', () => {
+    const baseValidEvent = {
+      title: 'Graduation Gala',
+      type: 'graduation' as const,
+      eventDate: '2027-06-20T19:00:00.000Z',
+      guestCount: 80,
+      location: 'Grand Ballroom, Chicago',
+      budget: {
+        totalBudget: 12000,
+        currency: 'USD' as const,
+        items: [],
+      },
+    };
+
+    it.each(['USD', 'EUR', 'GBP', 'INR', 'AUD'] as const)(
+      'accepts valid request with supported currency: %s',
+      async (curr) => {
+        const res = await request(app)
+          .post('/api/events/guest-ai-assist')
+          .send({
+            event: {
+              ...baseValidEvent,
+              budget: {
+                ...baseValidEvent.budget,
+                currency: curr,
+              },
+            },
+            prompt: `Planning ideas for budget in ${curr}`,
+          });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+      }
+    );
+
+    it('defaults currency to USD when omitted from budget', async () => {
+      const res = await request(app)
+        .post('/api/events/guest-ai-assist')
+        .send({
+          event: {
+            title: baseValidEvent.title,
+            type: baseValidEvent.type,
+            eventDate: baseValidEvent.eventDate,
+            guestCount: baseValidEvent.guestCount,
+            location: baseValidEvent.location,
+            budget: {
+              totalBudget: 10000,
+            },
+          },
+          prompt: 'Suggest entertainment options',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
+    it('rejects unsupported currency with 400', async () => {
+      const res = await request(app)
+        .post('/api/events/guest-ai-assist')
+        .send({
+          event: {
+            ...baseValidEvent,
+            budget: {
+              ...baseValidEvent.budget,
+              currency: 'XYZ',
+            },
+          },
+          prompt: 'What about this budget?',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('rejects unexpected fields at root level with 400', async () => {
+      const res = await request(app)
+        .post('/api/events/guest-ai-assist')
+        .send({
+          event: baseValidEvent,
+          prompt: 'Check security',
+          maliciousRootField: 'injected',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('rejects unexpected fields in event object with 400', async () => {
+      const res = await request(app)
+        .post('/api/events/guest-ai-assist')
+        .send({
+          event: {
+            ...baseValidEvent,
+            unauthorizedAdminFlag: true,
+          },
+          prompt: 'Check event-level security',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('rejects unexpected fields in budget object with 400', async () => {
+      const res = await request(app)
+        .post('/api/events/guest-ai-assist')
+        .send({
+          event: {
+            ...baseValidEvent,
+            budget: {
+              ...baseValidEvent.budget,
+              discountOverride: 9999,
+            },
+          },
+          prompt: 'Check budget-level security',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
   it('rejects unauthenticated attempts to save guest plan with 401', async () => {
     const res = await request(app)
       .post('/api/events/save-guest-plan')

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { verifyToken, type TokenPayload } from '../utils/auth.js';
+import { verifyToken } from '../utils/auth.js';
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   // Check authorization header first, then cookie

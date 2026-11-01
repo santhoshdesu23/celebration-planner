@@ -20,30 +20,56 @@ import { aiService } from '../services/aiService.js';
 import { aiJobRunner } from '../services/aiJobRunner.js';
 import { aiRateLimiter, guestAiRateLimiter } from '../middleware/rateLimiter.js';
 import { requireAuth } from '../middleware/auth.js';
-import { SaveGuestPlanSchema, EventTypeEnum } from '@celebration-planner/shared';
+import {
+  SaveGuestPlanSchema,
+  EventTypeEnum,
+  EventStatusEnum,
+  BudgetCurrencyEnum,
+  AiPlanStatusEnum,
+} from '@celebration-planner/shared';
 
 const router = Router();
 
 // In-memory idempotency cache for recent guest draft saves: draftId -> { eventId, ownerId, timestamp }
 const savedDraftIdCache = new Map<string, { eventId: string; ownerId: string; timestamp: number }>();
 
-const GuestAiAssistSchema = z.object({
-  event: z.object({
-    id: z.string().optional(),
-    title: z.string().min(1).max(200),
-    type: EventTypeEnum,
-    eventDate: z.string().datetime(),
-    guestCount: z.number().int().positive(),
-    location: z.string().min(1).max(500),
-    budget: z.object({
-      currency: z.string().default('USD'),
-      totalBudget: z.number().nonnegative(),
-      items: z.array(BudgetItemSchema).default([]),
-    }),
-  }),
-  prompt: z.string().min(1).max(2000),
-  contextType: z.string().default('general'),
-});
+const GuestAiAssistSchema = z
+  .object({
+    event: z
+      .object({
+        id: z.string().optional(),
+        ownerId: z.string().optional(),
+        title: z.string().min(1).max(200),
+        type: EventTypeEnum,
+        eventDate: z.string().datetime(),
+        guestCount: z.number().int().positive(),
+        location: z.string().min(1).max(500),
+        description: z.string().max(2000).optional(),
+        budget: z
+          .object({
+            currency: BudgetCurrencyEnum.default('USD'),
+            totalBudget: z.number().nonnegative(),
+            items: z.array(BudgetItemSchema).default([]),
+          })
+          .strict(),
+        status: EventStatusEnum.optional(),
+        timeline: z.array(TimelineItemSchema).optional(),
+        vendors: z.array(VendorSchema).optional(),
+        ideas: z.array(AiIdeaSchema).optional(),
+        aiSuggestionsGenerated: z.boolean().optional(),
+        aiPlanStatus: AiPlanStatusEnum.optional(),
+        aiPlanStartedAt: z.string().datetime().optional().nullable(),
+        aiPlanCompletedAt: z.string().datetime().optional().nullable(),
+        aiPlanError: z.string().max(1000).optional().nullable(),
+        aiPlanRetryCount: z.number().int().nonnegative().optional(),
+        createdAt: z.string().datetime().optional(),
+        updatedAt: z.string().datetime().optional(),
+      })
+      .strict(),
+    prompt: z.string().min(1).max(2000),
+    contextType: z.string().default('general'),
+  })
+  .strict();
 
 // ─── PUBLIC GUEST ENDPOINTS ──────────────────────────────────────────────────
 

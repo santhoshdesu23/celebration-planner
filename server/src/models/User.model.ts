@@ -3,7 +3,7 @@ import type { User as UserType } from '@celebration-planner/shared';
 
 const UserMongoSchema = new Schema<UserType>(
   {
-    id: { type: String, required: true, unique: true, index: true },
+    id: { type: String, required: true, unique: true },
     name: { type: String, required: true, trim: true },
     email: {
       type: String,
@@ -11,7 +11,6 @@ const UserMongoSchema = new Schema<UserType>(
       unique: true,
       trim: true,
       lowercase: true,
-      index: true,
     },
     passwordHash: { type: String, required: true },
     createdAt: { type: String, required: true },
